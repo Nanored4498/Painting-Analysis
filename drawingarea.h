@@ -97,7 +97,7 @@ private:
 
 	QImage image, image0;
 	uchar* im = nullptr;
-	double scale=1.0, sx=0.0, sy=0.0;
+	double scale, sx, sy;
 	int im_x, im_y;
 	double scale_im;
 	void clamp_sxy();

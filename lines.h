@@ -45,6 +45,7 @@ struct ProblemData {
 };
 
 ProblemData* applySobel(uchar* im, int W, int H, int num_smooth_pass);
+void save_sobel(const char *filename, PA::ProblemData *data);
 std::vector<Line> get_lines(ProblemData *data);
 
 }

@@ -97,22 +97,22 @@ void smooth_sep(double* norm, double* &angle, int W, int H) {
 	angle = a2;
 }
 
-void save_sobel(const char *filename, double *no, double *an, int W, int H, double m) {
-	uchar *res = new uchar[W*H*3];
+void PA::save_sobel(const char *filename, PA::ProblemData *data) {
+	uchar *res = new uchar[data->W*data->H*3];
 	int count = 0;
-	for(int i = 0; i < W*H; i++) {
-		double t = an[i] / CYCLE;
+	for(int i = 0; i < data->W*data->H; i++) {
+		double t = data->an[i] / CYCLE;
 		#ifndef MODE_PI
 		t += 0.5;
 		#endif
-		double n = no[i] * 255.0 / m;
+		double n = data->no[i] * 255.0 / data->m;
 		if(n < 12) n = 0;
 		else count ++, n = 255.0;
 		res[3*i] = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 		res[3*i+1] = std::max(0.0, 1-std::abs(3*t-1))*n;
 		res[3*i+2] = std::max(0.0, 1-std::abs(3*t-2))*n;
 	}
-	stbi_write_png(filename, W, H, 3, res, 0);
+	stbi_write_png(filename, data->W, data->H, 3, res, 0);
 }
 
 struct UF {
@@ -297,7 +297,7 @@ std::vector<PA::Line> hough_transform(double* no, double* an, int W, int H, int 
 	return ls;
 }
 
-PA::ProblemData* applySobel(uchar* im, int W, int H, int num_smooth_pass) {
+PA::ProblemData* PA::applySobel(uchar* im, int W, int H, int num_smooth_pass) {
 	bilateral(im, im, 3, 5, 3, W, H);
 	double *no, *an;
 	double m = sobel(im, no, an, W, H);

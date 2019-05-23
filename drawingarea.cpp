@@ -16,12 +16,21 @@ bool DrawingArea::loadImage(const QString &fileName) {
 	uchar* new_im = stbi_load(fileName.toStdString().data(), &W, &C, &H, 3);
 	if(!new_im) return false;
 	image0 = newImage;
-	if(im) free(im);
+	if(im) {
+		free(im);
+		im = nullptr;
+	}
 	im = new_im;
-	if(pa_data) delete pa_data;
+	if(pa_data) {
+		delete pa_data;
+		pa_data = nullptr;
+	}
 	lines.clear();
 	vanishPoints.clear();
 	emit reinitialized();
+	scale=1.0;
+	sx=0.0;
+	sy=0.0;
 	resize();
 	return true;
 }
@@ -144,7 +153,9 @@ void DrawingArea::computeSobel() {
 	lines.clear();
 	vanishPoints.clear();
 	int W = image0.width(), H = image0.height();
-	pa_data = PA::applySobel(im, W, H, 10);
+	pa_data = PA::applySobel(im, W, H, 5);
+	PA::save_sobel("sobel.png", pa_data);
+	sobelIm.load("sobel.png");
 	emit sobelComputed();
 }
 

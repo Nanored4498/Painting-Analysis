@@ -35,6 +35,7 @@ Window::Window(): QMainWindow() {
 	layout->addWidget(butsW);
 
 	sobelBut = new QPushButton("Compute Sobel");
+	sobelBut->setEnabled(false);
 	butLayout->addWidget(sobelBut);
 	connect(sobelBut, SIGNAL(clicked()), area, SLOT(computeSobel()));
 	connect(area, SIGNAL(sobelComputed()), this, SLOT(enableGetLine()));
@@ -56,6 +57,7 @@ void Window::open() {
 }
 
 void Window::disableButs() {
+	sobelBut->setEnabled(true);
 	getLinesBut->setEnabled(false);
 	vanishPointBut->setEnabled(false);
 }
