@@ -14,12 +14,19 @@ public:
 
 public slots:
 	void open();
+	void enableGetLine();
+	void enableVanishPoint(bool enabled);
+	void disableButs();
 
 private:
-	DrawingArea *area;
-
 	QMenu *fileMenu;
 	QAction *openAct;
+
+	DrawingArea *area;
+
+	QPushButton *getLinesBut;
+	QPushButton *vanishPointBut;
+	QPushButton *sobelBut;
 };
 
 #endif // WINDOW_H
