@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QPushButton>
+#include <QComboBox>
 #include "drawingarea.h"
 
 class Window: public QMainWindow {
@@ -27,6 +28,8 @@ private:
 	QPushButton *getLinesBut;
 	QPushButton *vanishPointBut;
 	QPushButton *sobelBut;
+
+	QComboBox *plotedImageBut;
 };
 
 #endif // WINDOW_H

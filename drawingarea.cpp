@@ -31,6 +31,7 @@ bool DrawingArea::loadImage(const QString &fileName) {
 	scale=1.0;
 	sx=0.0;
 	sy=0.0;
+	plotOriginal = true;
 	resize();
 	return true;
 }
@@ -55,7 +56,8 @@ void DrawingArea::resize() {
 	int rY0 = qMax(0, int(ry0 - 0.5*(dH-1)*rh));
 	int rY1 = qMin(image0.height()-1, int(ry0 + 0.5*(dH+1)*rh));
 	QRect rect(rX0, rY0, rX1-rX0, rY1-rY0);
-	image = image0.copy(rect).scaled(W, H, Qt::KeepAspectRatio);
+	if(plotOriginal) image = image0.copy(rect).scaled(W, H, Qt::KeepAspectRatio);
+	else image = sobelIm.copy(rect).scaled(W, H, Qt::KeepAspectRatio);
 	im_x = qAbs(dW-1) < 1e-4 ? 0 : int(0.5 * W * (1.0 - 1.0/dW) * (1.0 - double(rx0 - rX0) / (0.5*(dW-1)*rw)));
 	im_y = qAbs(dH-1) < 1e-4 ? 0 : int(0.5 * H * (1.0 - 1.0/dH) * (1.0 - double(ry0 - rY0) / (0.5*(dH-1)*rh)));
 	resizeLines();
@@ -103,6 +105,29 @@ void DrawingArea::wheelEvent(QWheelEvent *event) {
 	resize();
 }
 
+void DrawingArea::eraseSobel(double px, double py) {
+	double s = scale_im * scale;
+	int ix = int(sx + px/s), iy = int(sy + py/s);
+	int dx = 0;
+	double r2 = rBrush*rBrush / (s*s);
+	while(dx*dx <= r2) {
+		int dy = 0;
+		while(dx*dx+dy*dy <= r2) {
+			pa_data->no[ix+dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy+dy)*pa_data->W]);
+			if(sobelIm.pixel(ix+dx, iy+dy) & 0xffffff) sobelIm.setPixel(ix+dx, iy+dy, 0xffffff);
+			pa_data->no[ix-dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy+dy)*pa_data->W]);
+			if(sobelIm.pixel(ix-dx, iy+dy) & 0xffffff) sobelIm.setPixel(ix-dx, iy+dy, 0xffffff);
+			pa_data->no[ix+dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy-dy)*pa_data->W]);
+			if(sobelIm.pixel(ix+dx, iy-dy) & 0xffffff) sobelIm.setPixel(ix+dx, iy-dy, 0xffffff);
+			pa_data->no[ix-dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy-dy)*pa_data->W]);
+			if(sobelIm.pixel(ix-dx, iy-dy) & 0xffffff) sobelIm.setPixel(ix-dx, iy-dy, 0xffffff);
+			dy ++;
+		}
+		dx ++;
+	}
+	resize();
+}
+
 void DrawingArea::mousePressEvent(QMouseEvent *event) {
 	if(image0.isNull()) return;
 	double px = event->pos().x();
@@ -121,30 +146,36 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		}
 		emit lineSelection(sel);
 		update();
-	} else if(event->button() == Qt::MiddleButton) {
-		px -= (width() - image.width())/2;
-		py -= (height() - image.height())/2;
+	} else if(event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) {
+		px -= (width() - scale_im*image0.width()) / 2;
+		py -= (height() - scale_im*image0.height()) / 2;
 		if(px < 0 || px > image.width() || py < 0 || py > image.height()) return;
-		buttonPressed = true;
+		MidButPressed = event->button() == Qt::MiddleButton;
+		rightButPressed = !MidButPressed;
 		pressPos = event->pos();
 		press_sx = sx;
 		press_sy = sy;
+		if(rightButPressed && !plotOriginal) eraseSobel(px, py);
 	}
 }
 
 void DrawingArea::mouseReleaseEvent(QMouseEvent *event) {
-	if(event->button() == Qt::MiddleButton) buttonPressed = false;
+	if(event->button() == Qt::MiddleButton) MidButPressed = false;
+	else if(event->button() == Qt::RightButton) rightButPressed = false;
 }
 
 void DrawingArea::mouseMoveEvent(QMouseEvent *event) {
 	if(image0.isNull()) return;
-	if(!buttonPressed) return;
-	QPoint npos = event->pos();
-	double s = (double(image0.width()) / double(image.width())) / scale;
-	sx = press_sx - (npos.x() - pressPos.x()) * s;
-	sy = press_sy - (npos.y() - pressPos.y()) * s;
-	clamp_sxy();
-	resize();
+	if(MidButPressed) {
+		QPoint npos = event->pos();
+		double s = 1.0 / scale_im / scale;
+		sx = press_sx - (npos.x() - pressPos.x()) * s;
+		sy = press_sy - (npos.y() - pressPos.y()) * s;
+		clamp_sxy();
+		resize();
+	} else if(rightButPressed && !plotOriginal)
+		eraseSobel(event->pos().x() - (width() - scale_im*image0.width()) / 2,
+				   event->pos().y() - (height() - scale_im*image0.height()) / 2);
 }
 
 void DrawingArea::computeSobel() {
@@ -191,4 +222,9 @@ void DrawingArea::computeVanishP() {
 	vanishPoints.emplace_back(x, y);
 	resizeLines();
 	update();
+}
+
+void DrawingArea::selectPlot(int original) {
+	plotOriginal = original == 0;
+	resize();
 }

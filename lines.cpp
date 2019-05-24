@@ -220,7 +220,7 @@ std::vector<PA::Line> hough_transform(double* no, double* an, int W, int H, int 
 						double* &res) {
 	res = new double[R*T];
 	for(int i = 0; i < R*T; i++) res[i] = 0;
-	double ma = 0;
+//	double ma = 0;
 	double r_step = std::sqrt(W*W + H*H) / R;
 	double t_step = 1.5 * M_PI / T;
 	for(int x = 0; x < W; x++) {
@@ -240,22 +240,22 @@ std::vector<PA::Line> hough_transform(double* no, double* an, int W, int H, int 
 				int ti = int((tt + M_PI/2) / t_step);
 				int p = ri + ti * R;
 				res[p] += 1.0 - 0.75*std::pow(std::abs(std::sin(tt - an[pix])), 0.3);
-				ma = std::max(ma, res[p]);
+//				ma = std::max(ma, res[p]);
 			}
 		}
 	}
-	std::vector<std::pair<double, int>> lines;
-	for(int i = 0; i < R*T; i++)
-		if(res[i] > ma*0.41)
-			lines.push_back({-res[i], i});
-	std::sort(lines.begin(), lines.end());
+	std::vector<int> lines;
+	for(int i = 0; i < R*T; i++) lines.push_back(i);
+	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
 	std::vector<std::pair<int, int>> added;
 	std::vector<PA::Line> ls;
 	int min_d = int(0.015*0.015*(R*R + T*T));
-	for(unsigned int i = 0; i < unsigned(lines.size()); i++) {
+	unsigned int i = 0;
+	while(ls.size() < 20) {
 		bool add = true;
-		int x = lines[i].second % R;
-		int y = lines[i].second / R;
+		int x = lines[i] % R;
+		int y = lines[i] / R;
+		i++;
 		for(auto &other : added) {
 			int dx = x - other.first;
 			int dy = y - other.second;

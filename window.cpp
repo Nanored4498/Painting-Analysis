@@ -49,6 +49,14 @@ Window::Window(): QMainWindow() {
 	vanishPointBut->setEnabled(false);
 	butLayout->addWidget(vanishPointBut);
 	connect(vanishPointBut, SIGNAL(clicked()), area, SLOT(computeVanishP()));
+
+	plotedImageBut = new QComboBox();
+	plotedImageBut->addItem("Original");
+	plotedImageBut->addItem("Sobel");
+	QModelIndex index = plotedImageBut->model()->index(1, 0);
+	plotedImageBut->model()->setData(index, 0, Qt::UserRole - 1);
+	butLayout->addWidget(plotedImageBut);
+	connect(plotedImageBut, SIGNAL(currentIndexChanged(int)), area, SLOT(selectPlot(int)));
 }
 
 void Window::open() {
@@ -60,11 +68,17 @@ void Window::disableButs() {
 	sobelBut->setEnabled(true);
 	getLinesBut->setEnabled(false);
 	vanishPointBut->setEnabled(false);
+	plotedImageBut->setCurrentIndex(0);
+	QModelIndex index = plotedImageBut->model()->index(1, 0);
+	plotedImageBut->model()->setData(index, 0, Qt::UserRole - 1);
 }
 
 void Window::enableGetLine() {
 	getLinesBut->setEnabled(true);
 	vanishPointBut->setEnabled(false);
+	QModelIndex index = plotedImageBut->model()->index(1, 0);
+//	QVariant v(1|32);
+	plotedImageBut->model()->setData(index, 1|32, Qt::UserRole - 1);
 }
 
 void Window::enableVanishPoint(bool enabled) {

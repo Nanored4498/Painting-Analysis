@@ -81,6 +81,7 @@ public slots:
 	void findLines();
 	void computeSobel();
 	void computeVanishP();
+	void selectPlot(int original);
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
@@ -94,6 +95,7 @@ protected:
 private:
 	void resize();
 	void resizeLines();
+	void eraseSobel(double px, double py);
 
 	QImage image, image0;
 	uchar* im = nullptr;
@@ -104,10 +106,14 @@ private:
 
 	PA::ProblemData *pa_data = nullptr;
 	QImage sobelIm;
+	bool plotOriginal = true;
 
-	bool buttonPressed = false;
+	bool MidButPressed = false;
 	QPoint pressPos;
 	double press_sx=0.0, press_sy=0.0;
+
+	double rBrush = 8.0;
+	bool rightButPressed = false;
 
 	std::vector<DLine> lines;
 	std::vector<DPoint> vanishPoints;
