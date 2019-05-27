@@ -4,7 +4,10 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QComboBox>
-#include "drawingarea.h"
+#include <QLabel>
+
+#include <drawing_area.h>
+#include <labeled_slider.h>
 
 class Window: public QMainWindow {
 Q_OBJECT
@@ -30,8 +33,8 @@ private:
 	QPushButton *sobelBut;
 	QComboBox *plotedImageBut;
 
-	QSlider *nLinesSli;
-	QSlider *rBrushSli;
+	LabeledSlider *nLinesSli;
+	LabeledSlider *rBrushSli;
 };
 
 #endif // WINDOW_H

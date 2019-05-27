@@ -1,4 +1,5 @@
-#include "drawingarea.h"
+#include "drawing_area.h"
+
 #include <QPainter>
 #include <QMouseEvent>
 #include <QApplication>

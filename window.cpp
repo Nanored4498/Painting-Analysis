@@ -1,4 +1,5 @@
-#include "window.h"
+#include <window.h>
+
 #include <QApplication>
 #include <QMenuBar>
 #include <QFileDialog>
@@ -20,6 +21,8 @@ Window::Window(): QMainWindow() {
 
 	QWidget *centralW = new QWidget();
 	QVBoxLayout *layout = new QVBoxLayout();
+	layout->setContentsMargins(8, 2, 8, 2);
+	layout->setSpacing(0);
 	centralW->setLayout(layout);
 	setCentralWidget(centralW);
 
@@ -31,6 +34,7 @@ Window::Window(): QMainWindow() {
 	QWidget *butsW = new QWidget();
 	butsW->setFixedHeight(42);
 	QHBoxLayout *butLayout = new QHBoxLayout();
+	butLayout->setContentsMargins(0, 0, 0, 0);
 	butsW->setLayout(butLayout);
 	layout->addWidget(butsW);
 
@@ -59,20 +63,17 @@ Window::Window(): QMainWindow() {
 	connect(plotedImageBut, SIGNAL(currentIndexChanged(int)), area, SLOT(selectPlot(int)));
 
 	QWidget *slidW = new QWidget();
-	slidW->setFixedHeight(36);
+	slidW->setFixedHeight(40);
 	QHBoxLayout *sliLayout = new QHBoxLayout();
+	sliLayout->setContentsMargins(0, 0, 0, 0);
 	slidW->setLayout(sliLayout);
 	layout->addWidget(slidW);
 
-	nLinesSli = new QSlider(Qt::Orientation::Horizontal);
-	nLinesSli->setRange(5, 40);
-	nLinesSli->setValue(NBLINES0);
+	nLinesSli = new LabeledSlider("Number of lines", 5, 40, NBLINES0);
 	sliLayout->addWidget(nLinesSli);
 	connect(nLinesSli, SIGNAL(valueChanged(int)), area, SLOT(changeNbLines(int)));
 
-	rBrushSli = new QSlider(Qt::Orientation::Horizontal);
-	rBrushSli->setRange(2, 30);
-	rBrushSli->setValue(RBRUSH0);
+	rBrushSli = new LabeledSlider("Brush radius", 2, 30, RBRUSH0);
 	sliLayout->addWidget(rBrushSli);
 	connect(rBrushSli, SIGNAL(valueChanged(int)), area, SLOT(changeRBrush(int)));
 }
@@ -95,7 +96,6 @@ void Window::enableGetLine() {
 	getLinesBut->setEnabled(true);
 	vanishPointBut->setEnabled(false);
 	QModelIndex index = plotedImageBut->model()->index(1, 0);
-//	QVariant v(1|32);
 	plotedImageBut->model()->setData(index, 1|32, Qt::UserRole - 1);
 }
 
