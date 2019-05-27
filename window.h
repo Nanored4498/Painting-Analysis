@@ -28,8 +28,10 @@ private:
 	QPushButton *getLinesBut;
 	QPushButton *vanishPointBut;
 	QPushButton *sobelBut;
-
 	QComboBox *plotedImageBut;
+
+	QSlider *nLinesSli;
+	QSlider *rBrushSli;
 };
 
 #endif // WINDOW_H

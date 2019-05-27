@@ -159,6 +159,21 @@ void clean(double *n, int W, int H, double threshold, unsigned int min_size) {
 		if(u.w[u.find(i)] < min_size) n[i] = 0;
 }
 
+PA::ProblemData* PA::applySobel(uchar* im, int W, int H, int num_smooth_pass) {
+	bilateral(im, im, 3, 5, 3, W, H);
+	double *no, *an;
+	double m = sobel(im, no, an, W, H);
+	clean(no, W, H, 0.05*m, 42);
+	for(int i = 0; i < num_smooth_pass; i++)
+		smooth_sep(no, an, W, H);
+	#ifdef MODE_PI
+	for(int i = 0; i < W*H; i++)
+		if(an[i] < 0) an[i] += M_PI;
+	#endif
+
+	return new PA::ProblemData(W, H, no, an, m);
+}
+
 #define TEST
 PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 	double mx = 0, my = 0, sn = 0;
@@ -216,17 +231,15 @@ PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 	return PA::Line(a, b);
 }
 
-std::vector<PA::Line> hough_transform(double* no, double* an, int W, int H, int R, int T, double threshold,
-						double* &res) {
-	res = new double[R*T];
+std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, int R, int T, unsigned int nbLines) {
+	double *res = new double[R*T];
 	for(int i = 0; i < R*T; i++) res[i] = 0;
-//	double ma = 0;
-	double r_step = std::sqrt(W*W + H*H) / R;
+	double r_step = std::sqrt(data->W*data->W + data->H*data->H) / R;
 	double t_step = 1.5 * M_PI / T;
-	for(int x = 0; x < W; x++) {
-		for(int y = 0; y < H; y++) {
-			int pix = x + y*W;
-			if(no[pix] < threshold) continue;
+	for(int x = 0; x < data->W; x++) {
+		for(int y = 0; y < data->H; y++) {
+			int pix = x + y*data->W;
+			if(data->no[pix] < 0.05*data->m) continue;
 //			double alpha = int((std::atan2(y, x) + 0.5*M_PI) / t_step) * t_step;
 //			double mit = alpha - (0.3333*T + 0.5)*t_step, mat = alpha + 0.3333*T*t_step;
 			for(double tt = -0.5*M_PI + 0.5*t_step; tt < M_PI; tt += t_step) {
@@ -239,8 +252,7 @@ std::vector<PA::Line> hough_transform(double* no, double* an, int W, int H, int 
 				int ri = int(r / r_step);
 				int ti = int((tt + M_PI/2) / t_step);
 				int p = ri + ti * R;
-				res[p] += 1.0 - 0.75*std::pow(std::abs(std::sin(tt - an[pix])), 0.3);
-//				ma = std::max(ma, res[p]);
+				res[p] += (1.0 - std::pow(std::abs(std::sin(tt - data->an[pix])), 0.3)) * (1.0 + 1.5 * data->no[pix]/data->m);
 			}
 		}
 	}
@@ -251,7 +263,7 @@ std::vector<PA::Line> hough_transform(double* no, double* an, int W, int H, int 
 	std::vector<PA::Line> ls;
 	int min_d = int(0.015*0.015*(R*R + T*T));
 	unsigned int i = 0;
-	while(ls.size() < 20) {
+	while(ls.size() < nbLines) {
 		bool add = true;
 		int x = lines[i] % R;
 		int y = lines[i] / R;
@@ -294,29 +306,6 @@ std::vector<PA::Line> hough_transform(double* no, double* an, int W, int H, int 
 		// Line l2 = pca(ps, no, an, W);
 		// ls.push_back(l2);
 	}
+	delete [] res;
 	return ls;
-}
-
-PA::ProblemData* PA::applySobel(uchar* im, int W, int H, int num_smooth_pass) {
-	bilateral(im, im, 3, 5, 3, W, H);
-	double *no, *an;
-	double m = sobel(im, no, an, W, H);
-	clean(no, W, H, 0.05*m, 42);
-	for(int i = 0; i < num_smooth_pass; i++)
-		smooth_sep(no, an, W, H);
-	#ifdef MODE_PI
-	for(int i = 0; i < W*H; i++)
-		if(an[i] < 0) an[i] += M_PI;
-	#endif
-
-	return new PA::ProblemData(W, H, no, an, m);
-}
-
-std::vector<PA::Line> PA::get_lines(PA::ProblemData *data) {
-	double *ht;
-	int R = 500, T = 360;
-	std::vector<PA::Line> res = hough_transform(data->no, data->an, data->W, data->H, R, T, 0.05*data->m, ht);
-	delete[] ht;
-
-	return res;
 }

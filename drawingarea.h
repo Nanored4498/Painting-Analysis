@@ -7,6 +7,8 @@
 #include <QtDebug>
 #include "lines.h"
 
+#define NBLINES0 20
+#define RBRUSH0 8
 
 class DPoint {
 public:
@@ -82,6 +84,8 @@ public slots:
 	void computeSobel();
 	void computeVanishP();
 	void selectPlot(int original);
+	void changeNbLines(int n);
+	void changeRBrush(int r);
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
@@ -112,9 +116,10 @@ private:
 	QPoint pressPos;
 	double press_sx=0.0, press_sy=0.0;
 
-	double rBrush = 8.0;
+	double rBrush = RBRUSH0;
 	bool rightButPressed = false;
 
+	unsigned int nbLines = NBLINES0;
 	std::vector<DLine> lines;
 	std::vector<DPoint> vanishPoints;
 };

@@ -114,13 +114,17 @@ void DrawingArea::eraseSobel(double px, double py) {
 		int dy = 0;
 		while(dx*dx+dy*dy <= r2) {
 			pa_data->no[ix+dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy+dy)*pa_data->W]);
-			if(sobelIm.pixel(ix+dx, iy+dy) & 0xffffff) sobelIm.setPixel(ix+dx, iy+dy, 0xffffff);
+			if(sobelIm.rect().contains(ix+dx, iy+dy) && (sobelIm.pixel(ix+dx, iy+dy) & 0xffffff))
+				sobelIm.setPixel(ix+dx, iy+dy, 0xffffff);
 			pa_data->no[ix-dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy+dy)*pa_data->W]);
-			if(sobelIm.pixel(ix-dx, iy+dy) & 0xffffff) sobelIm.setPixel(ix-dx, iy+dy, 0xffffff);
+			if(sobelIm.rect().contains(ix-dx, iy+dy) && (sobelIm.pixel(ix-dx, iy+dy) & 0xffffff))
+				sobelIm.setPixel(ix-dx, iy+dy, 0xffffff);
 			pa_data->no[ix+dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy-dy)*pa_data->W]);
-			if(sobelIm.pixel(ix+dx, iy-dy) & 0xffffff) sobelIm.setPixel(ix+dx, iy-dy, 0xffffff);
+			if(sobelIm.rect().contains(ix+dx, iy-dy) && (sobelIm.pixel(ix+dx, iy-dy) & 0xffffff))
+				sobelIm.setPixel(ix+dx, iy-dy, 0xffffff);
 			pa_data->no[ix-dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy-dy)*pa_data->W]);
-			if(sobelIm.pixel(ix-dx, iy-dy) & 0xffffff) sobelIm.setPixel(ix-dx, iy-dy, 0xffffff);
+			if(sobelIm.rect().contains(ix-dx, iy-dy) && (sobelIm.pixel(ix-dx, iy-dy) & 0xffffff))
+				sobelIm.setPixel(ix-dx, iy-dy, 0xffffff);
 			dy ++;
 		}
 		dx ++;
@@ -173,9 +177,19 @@ void DrawingArea::mouseMoveEvent(QMouseEvent *event) {
 		sy = press_sy - (npos.y() - pressPos.y()) * s;
 		clamp_sxy();
 		resize();
-	} else if(rightButPressed && !plotOriginal)
-		eraseSobel(event->pos().x() - (width() - scale_im*image0.width()) / 2,
-				   event->pos().y() - (height() - scale_im*image0.height()) / 2);
+	} else if(rightButPressed && !plotOriginal) {
+		double px = event->pos().x() - (width() - scale_im*image0.width()) / 2;
+		double py = event->pos().y() - (height() - scale_im*image0.height()) / 2;
+		eraseSobel(px, py);
+		QPoint dir = event->pos() - pressPos;
+		double dist = qSqrt(dir.x()*dir.x() + dir.y()*dir.y());
+		for(double d = rBrush; d <= dist-rBrush; d += rBrush) {
+			px -= dir.x() / dist * rBrush;
+			py -= dir.y() / dist * rBrush;
+			eraseSobel(px, py);
+		}
+		pressPos = event->pos();
+	}
 }
 
 void DrawingArea::computeSobel() {
@@ -192,7 +206,7 @@ void DrawingArea::computeSobel() {
 
 void DrawingArea::findLines() {
 	int W = image0.width(), H = image0.height();
-	std::vector<PA::Line> ls = PA::get_lines(pa_data);
+	std::vector<PA::Line> ls = PA::get_lines(pa_data, 800, 600, nbLines);
 	lines.clear();
 	vanishPoints.clear();
 	for(const PA::Line &l : ls)
@@ -227,4 +241,12 @@ void DrawingArea::computeVanishP() {
 void DrawingArea::selectPlot(int original) {
 	plotOriginal = original == 0;
 	resize();
+}
+
+void DrawingArea::changeNbLines(int n) {
+	nbLines = n;
+}
+
+void DrawingArea::changeRBrush(int r) {
+	rBrush = r;
 }

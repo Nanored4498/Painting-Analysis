@@ -57,6 +57,24 @@ Window::Window(): QMainWindow() {
 	plotedImageBut->model()->setData(index, 0, Qt::UserRole - 1);
 	butLayout->addWidget(plotedImageBut);
 	connect(plotedImageBut, SIGNAL(currentIndexChanged(int)), area, SLOT(selectPlot(int)));
+
+	QWidget *slidW = new QWidget();
+	slidW->setFixedHeight(36);
+	QHBoxLayout *sliLayout = new QHBoxLayout();
+	slidW->setLayout(sliLayout);
+	layout->addWidget(slidW);
+
+	nLinesSli = new QSlider(Qt::Orientation::Horizontal);
+	nLinesSli->setRange(5, 40);
+	nLinesSli->setValue(NBLINES0);
+	sliLayout->addWidget(nLinesSli);
+	connect(nLinesSli, SIGNAL(valueChanged(int)), area, SLOT(changeNbLines(int)));
+
+	rBrushSli = new QSlider(Qt::Orientation::Horizontal);
+	rBrushSli->setRange(2, 30);
+	rBrushSli->setValue(RBRUSH0);
+	sliLayout->addWidget(rBrushSli);
+	connect(rBrushSli, SIGNAL(valueChanged(int)), area, SLOT(changeRBrush(int)));
 }
 
 void Window::open() {
@@ -88,6 +106,14 @@ void Window::enableVanishPoint(bool enabled) {
 Window::~Window() {
 	delete fileMenu;
 	delete openAct;
+
 	delete area;
+
 	delete getLinesBut;
+	delete vanishPointBut;
+	delete sobelBut;
+	delete plotedImageBut;
+
+	delete nLinesSli;
+	delete rBrushSli;
 }
