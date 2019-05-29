@@ -63,6 +63,12 @@ public:
 		return qAbs(d - r);
 	}
 
+	DPoint getIntersection(const DLine &other) {
+		double x = (other.li.b - li.b) / (li.a - other.li.a);
+		double y = li.a * x + li.b;
+		return DPoint(x, y);
+	}
+
 	void unselect() { selected = false; }
 	void select() { selected = !selected; }
 	void setGroup(int g) { group = g; }

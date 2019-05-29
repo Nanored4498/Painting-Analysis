@@ -182,6 +182,9 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 			for(DLine &l : lines)
 				if((groups.count(l.get_group()) > 0) != l.is_selected())
 					l.select();
+			for(DPoint &p : vanishPoints)
+				if((groups.count(p.get_group()) > 0) != p.is_selected())
+					p.select();
 		}
 		bool sel = false;
 		for(DLine &l : lines)
@@ -260,6 +263,7 @@ void DrawingArea::findLines() {
 }
 
 void DrawingArea::selectionAction() {
+	qInfo() << "test0" << endl;
 	if(action == VANISH_POINT) {
 		double s, c, r;
 		double s_cc = 0, s_cs = 0, s_ss = 0, s_cr = 0, s_sr = 0;
@@ -286,24 +290,45 @@ void DrawingArea::selectionAction() {
 		for(DLine &l : lines)
 			if(l.is_selected()) l.setGroup(g);
 		vanishPoints[vanishPoints.size()-1].setGroup(g);
-		resizeLines();
-		update();
+		vanishPoints[vanishPoints.size()-1].select();
 	} else if(action == INTERSECTIONS) {
-
+		qInfo() << "test1" << endl;
+		std::vector<std::vector<int>> gs;
+		std::vector<int> inds;
+		for(int i = 0; i < int(lines.size()); i++) {
+			if(lines[i].is_selected()) {
+				int g = lines[i].get_group();
+				while(g >= int(gs.size())) gs.emplace_back();
+				if(gs[g].empty()) inds.push_back(g);
+				gs[g].push_back(i);
+			}
+		}
+		int I = inds.size();
+		qInfo() << "inds size: " << I << endl;
+		for(int i = 0; i < I; i++) {
+			for(int j = i+1; j < I; j++) {
+				for(int a : gs[inds[i]]) {
+					for(int b : gs[inds[j]]) {
+						DPoint p = lines[a].getIntersection(lines[b]);
+						vanishPoints.push_back(p);
+					}
+				}
+			}
+		}
 	} else if(action == UNGROUP) {
 		for(DLine &l : lines)
 			if(l.is_selected()) l.setGroup(0);
-		for(int i = 0; i < vanishPoints.size(); i++) {
+		int V = vanishPoints.size();
+		for(int i = 0; i < V; i++) {
 			if(vanishPoints[i].is_selected()) {
-				if(i != vanishPoints.size()-1)
-					vanishPoints[i] = vanishPoints[vanishPoints.size()-1];
+				if(i != V-1) vanishPoints[i] = vanishPoints[V-1];
 				vanishPoints.pop_back();
 				break;
 			}
 		}
-		resizeLines();
-		update();
 	}
+	resizeLines();
+	update();
 }
 
 void DrawingArea::selectPlot(int original) {
