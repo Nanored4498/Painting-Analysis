@@ -122,17 +122,17 @@ void DrawingArea::eraseSobel(double px, double py) {
 	while(dx*dx <= r2) {
 		int dy = 0;
 		while(dx*dx+dy*dy <= r2) {
-			pa_data->no[ix+dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy+dy)*pa_data->W]);
 			if(sobelIm.rect().contains(ix+dx, iy+dy) && (sobelIm.pixel(ix+dx, iy+dy) & 0xffffff))
+				pa_data->no[ix+dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy+dy)*pa_data->W]),
 				sobelIm.setPixel(ix+dx, iy+dy, 0xffffff);
-			pa_data->no[ix-dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy+dy)*pa_data->W]);
 			if(sobelIm.rect().contains(ix-dx, iy+dy) && (sobelIm.pixel(ix-dx, iy+dy) & 0xffffff))
+				pa_data->no[ix-dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy+dy)*pa_data->W]),
 				sobelIm.setPixel(ix-dx, iy+dy, 0xffffff);
-			pa_data->no[ix+dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy-dy)*pa_data->W]);
 			if(sobelIm.rect().contains(ix+dx, iy-dy) && (sobelIm.pixel(ix+dx, iy-dy) & 0xffffff))
+				pa_data->no[ix+dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy-dy)*pa_data->W]),
 				sobelIm.setPixel(ix+dx, iy-dy, 0xffffff);
-			pa_data->no[ix-dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy-dy)*pa_data->W]);
 			if(sobelIm.rect().contains(ix-dx, iy-dy) && (sobelIm.pixel(ix-dx, iy-dy) & 0xffffff))
+				pa_data->no[ix-dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy-dy)*pa_data->W]),
 				sobelIm.setPixel(ix-dx, iy-dy, 0xffffff);
 			dy ++;
 		}
@@ -263,7 +263,6 @@ void DrawingArea::findLines() {
 }
 
 void DrawingArea::selectionAction() {
-	qInfo() << "test0" << endl;
 	if(action == VANISH_POINT) {
 		double s, c, r;
 		double s_cc = 0, s_cs = 0, s_ss = 0, s_cr = 0, s_sr = 0;
@@ -292,7 +291,6 @@ void DrawingArea::selectionAction() {
 		vanishPoints[vanishPoints.size()-1].setGroup(g);
 		vanishPoints[vanishPoints.size()-1].select();
 	} else if(action == INTERSECTIONS) {
-		qInfo() << "test1" << endl;
 		std::vector<std::vector<int>> gs;
 		std::vector<int> inds;
 		for(int i = 0; i < int(lines.size()); i++) {
@@ -304,14 +302,45 @@ void DrawingArea::selectionAction() {
 			}
 		}
 		int I = inds.size();
-		qInfo() << "inds size: " << I << endl;
+		for(int i : inds) {
+			double mt = 0;
+			for(int a : gs[i]) mt += lines[a].getTheta();
+			mt /= gs[i].size();
+			double vt = 0;
+			for(int a : gs[i]) vt += qPow(lines[a].getTheta() - mt, 2.0);
+			vt = qSqrt(vt / gs[i].size());
+			if(vt < 0.05) std::sort(gs[i].begin(), gs[i].end(), [this](int a, int b) { return lines[a].getRho() < lines[b].getRho(); });
+			else std::sort(gs[i].begin(), gs[i].end(), [this](int a, int b) { return lines[a].getTheta() < lines[b].getTheta(); });
+		}
 		for(int i = 0; i < I; i++) {
 			for(int j = i+1; j < I; j++) {
+				std::vector<std::vector<PDD>> vvp;
 				for(int a : gs[inds[i]]) {
+					std::vector<PDD> vp;
 					for(int b : gs[inds[j]]) {
-						DPoint p = lines[a].getIntersection(lines[b]);
-						vanishPoints.push_back(p);
+						PDD p = lines[a].getIntersection(lines[b]);
+						vp.push_back(p);
 					}
+					vvp.push_back(vp);
+				}
+				int n = vvp.size();
+				int m = vvp[0].size();
+				int W = image0.width(), H = image0.height();
+				for(int s = 1; s <= n+m-2; s++) {
+					std::vector<PDD> ps;
+					for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
+						PDD p = vvp[a][s-a];
+						if(p.first >= 0 && p.first < W && p.second >= 0 && p.second < H)
+							ps.push_back(p);
+					}
+					if(ps.size() > 1) lines.push_back(pca_pdd(ps, W, H));
+					ps.clear();
+					for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
+						PDD p = vvp[n-1-a][s-a];
+						if(p.first >= 0 && p.first < W && p.second >= 0 && p.second < H)
+							ps.push_back(p);
+					}
+					if(ps.size() > 1) lines.push_back(pca_pdd(ps, W, H));
 				}
 			}
 		}

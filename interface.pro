@@ -10,6 +10,7 @@ SOURCES += \
 	labeled_slider.cpp \
 	window.cpp \
 	drawing_area.cpp \
+	drawing_elements.cpp \
 	lines.cpp \
 	stb_image.cpp
 
