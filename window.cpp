@@ -28,7 +28,7 @@ Window::Window(): QMainWindow() {
 
 	area = new DrawingArea();
 	layout->addWidget(area);
-	connect(area, SIGNAL(lineSelection(bool)), this, SLOT(enableVanishPoint(bool)));
+	connect(area, SIGNAL(selected(int)), this, SLOT(shiftSelection(int)));
 	connect(area, SIGNAL(reinitialized()), this, SLOT(disableButs()));
 
 	QWidget *butsW = new QWidget();
@@ -49,10 +49,10 @@ Window::Window(): QMainWindow() {
 	butLayout->addWidget(getLinesBut);
 	connect(getLinesBut, SIGNAL(clicked()), area, SLOT(findLines()));
 
-	vanishPointBut = new QPushButton("Compute Vanish Point");
-	vanishPointBut->setEnabled(false);
-	butLayout->addWidget(vanishPointBut);
-	connect(vanishPointBut, SIGNAL(clicked()), area, SLOT(computeVanishP()));
+	selectionBut = new QPushButton("Compute Vanish Point");
+	selectionBut->setEnabled(false);
+	butLayout->addWidget(selectionBut);
+	connect(selectionBut, SIGNAL(clicked()), area, SLOT(selectionAction()));
 
 	plotedImageBut = new QComboBox();
 	plotedImageBut->addItem("Original");
@@ -86,7 +86,8 @@ void Window::open() {
 void Window::disableButs() {
 	sobelBut->setEnabled(true);
 	getLinesBut->setEnabled(false);
-	vanishPointBut->setEnabled(false);
+	selectionBut->setEnabled(false);
+	selectionBut->setText("Compute Vanish Point");
 	plotedImageBut->setCurrentIndex(0);
 	QModelIndex index = plotedImageBut->model()->index(1, 0);
 	plotedImageBut->model()->setData(index, 0, Qt::UserRole - 1);
@@ -94,13 +95,17 @@ void Window::disableButs() {
 
 void Window::enableGetLine() {
 	getLinesBut->setEnabled(true);
-	vanishPointBut->setEnabled(false);
+	selectionBut->setEnabled(false);
+	selectionBut->setText("Compute Vanish Point");
 	QModelIndex index = plotedImageBut->model()->index(1, 0);
 	plotedImageBut->model()->setData(index, 1|32, Qt::UserRole - 1);
 }
 
-void Window::enableVanishPoint(bool enabled) {
-	vanishPointBut->setEnabled(enabled);
+void Window::shiftSelection(int a) {
+	selectionBut->setEnabled(a != UNSELECTED);
+	if(a == VANISH_POINT) selectionBut->setText("Compute Vanish Point");
+	else if(a == INTERSECTIONS) selectionBut->setText("Compute Intersections");
+	else if(a == UNGROUP) selectionBut->setText("Ungroup");
 }
 
 Window::~Window() {
@@ -110,7 +115,7 @@ Window::~Window() {
 	delete area;
 
 	delete getLinesBut;
-	delete vanishPointBut;
+	delete selectionBut;
 	delete sobelBut;
 	delete plotedImageBut;
 

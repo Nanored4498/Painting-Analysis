@@ -12,6 +12,11 @@
 #define NBLINES0 20
 #define RBRUSH0 8
 
+#define UNSELECTED 0
+#define VANISH_POINT 1
+#define INTERSECTIONS 2
+#define UNGROUP 3
+
 class DrawingArea : public QWidget {
 Q_OBJECT
 
@@ -23,12 +28,12 @@ public:
 signals:
 	void reinitialized();
 	void sobelComputed();
-	void lineSelection(bool selected);
+	void selected(int a);
 
 public slots:
 	void findLines();
 	void computeSobel();
-	void computeVanishP();
+	void selectionAction();
 	void selectPlot(int original);
 	void changeNbLines(int n);
 	void changeRBrush(int r);
@@ -64,6 +69,8 @@ private:
 
 	double rBrush = RBRUSH0;
 	bool rightButPressed = false;
+
+	int action = 0;
 
 	unsigned int nbLines = NBLINES0;
 	std::vector<DLine> lines;

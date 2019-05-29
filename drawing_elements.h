@@ -15,10 +15,24 @@ public:
 		p = (p0-sp) * s + dp;
 	}
 
+	double get_dist(double px, double py) {
+		double dx = p.x() - px;
+		double dy = p.y() - py;
+		return qSqrt(dx*dx + dy*dy);
+	}
+
+	void unselect() { selected = false; }
+	void select() { selected = !selected; }
+	void setGroup(int g) { group = g; }
+
 	QPoint get_point() const { return p; }
+	bool is_selected() const { return selected; }
+	int get_group() const { return group; }
 
 private:
 	QPoint p0, p;
+	bool selected = false;
+	int group = 0;
 };
 
 class DLine {
@@ -51,9 +65,11 @@ public:
 
 	void unselect() { selected = false; }
 	void select() { selected = !selected; }
+	void setGroup(int g) { group = g; }
 
 	QLine get_line() const { return l; }
 	bool is_selected() const { return selected; }
+	int get_group() const { return group; }
 	void getCSR(double &c, double &s, double &r) const { c = co, s = si, r = li.rho; }
 
 private:
@@ -61,6 +77,7 @@ private:
 	double co, si;
 	QLine l0, l;
 	bool selected = false;
+	int group = 0;
 };
 
 #endif // DRAWINGELEMENTS_H

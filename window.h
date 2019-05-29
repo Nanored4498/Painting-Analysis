@@ -19,7 +19,7 @@ public:
 public slots:
 	void open();
 	void enableGetLine();
-	void enableVanishPoint(bool enabled);
+	void shiftSelection(int a);
 	void disableButs();
 
 private:
@@ -29,7 +29,7 @@ private:
 	DrawingArea *area;
 
 	QPushButton *getLinesBut;
-	QPushButton *vanishPointBut;
+	QPushButton *selectionBut;
 	QPushButton *sobelBut;
 	QComboBox *plotedImageBut;
 
