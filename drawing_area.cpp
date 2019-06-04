@@ -8,7 +8,8 @@
 
 #include <stb_image.h>
 
-const static std::vector<QColor> colors = {Qt::blue, Qt::green, Qt::magenta, Qt::yellow};
+const static std::vector<QColor> colors = {Qt::blue, Qt::green, Qt::magenta, Qt::yellow, QColor(240, 0, 120),
+											QColor(0, 240, 120), QColor(120, 0, 240), QColor(120, 240, 0)};
 
 DrawingArea::DrawingArea(QWidget *parent) : QWidget(parent) {
 
@@ -32,10 +33,11 @@ bool DrawingArea::loadImage(const QString &fileName) {
 	}
 	lines.clear();
 	vanishPoints.clear();
+	computeHorizon();
 	emit reinitialized();
-	scale=1.0;
-	sx=0.0;
-	sy=0.0;
+	scale = 1.0;
+	sx = 0.0;
+	sy = 0.0;
 	plotOriginal = true;
 	resize();
 	return true;
@@ -47,6 +49,7 @@ void DrawingArea::resizeLines() {
 	QPoint sp(sx, sy);
 	for(DLine &l : lines) l.update(s, sp, dp);
 	for(DPoint &p : vanishPoints) p.update(s, sp, dp);
+	if(horizontalLine) horizontalLine->update(s, sp, dp);
 }
 
 void DrawingArea::resize() {
@@ -96,6 +99,11 @@ void DrawingArea::paintEvent(QPaintEvent *event) {
 	for(const DPoint &p : vanishPoints) {
 		painter.setPen(p.is_selected() ? selColP : unselColP);
 		painter.drawPoint(p.get_point());
+	}
+	if(horizontalLine) {
+		QPen horizonCol(QColor(0, 120, 240), 1.6*size_mul);
+		painter.setPen(horizonCol);
+		painter.drawLine(horizontalLine->get_line());
 	}
 }
 
@@ -258,6 +266,7 @@ void DrawingArea::findLines() {
 	vanishPoints.clear();
 	for(const PA::Line &l : ls)
 		lines.emplace_back(l, W, H);
+	computeHorizon();
 	resizeLines();
 	update();
 }
@@ -303,14 +312,19 @@ void DrawingArea::selectionAction() {
 		}
 		int I = inds.size();
 		for(int i : inds) {
-			double mt = 0;
-			for(int a : gs[i]) mt += lines[a].getTheta();
-			mt /= gs[i].size();
-			double vt = 0;
-			for(int a : gs[i]) vt += qPow(lines[a].getTheta() - mt, 2.0);
-			vt = qSqrt(vt / gs[i].size());
-			if(vt < 0.05) std::sort(gs[i].begin(), gs[i].end(), [this](int a, int b) { return lines[a].getRho() < lines[b].getRho(); });
-			else std::sort(gs[i].begin(), gs[i].end(), [this](int a, int b) { return lines[a].getTheta() < lines[b].getTheta(); });
+			double mc = 0, ms = 0;
+			for(int a : gs[i]) {
+				double t = 2 * lines[a].getTheta();
+				mc += qCos(t);
+				ms += qSin(t);
+			}
+			double t = qTan(qAtan2(ms, mc) / 2);
+			auto fun = [this, t](int i) {
+				double c, s, r;
+				lines[i].getCSR(c, s, r);
+				return r / (c + s*t);
+			};
+			std::sort(gs[i].begin(), gs[i].end(), [&fun](int a, int b) { return fun(a) < fun(b); });
 		}
 		for(int i = 0; i < I; i++) {
 			for(int j = i+1; j < I; j++) {
@@ -356,6 +370,7 @@ void DrawingArea::selectionAction() {
 			}
 		}
 	}
+	computeHorizon();
 	resizeLines();
 	update();
 }
@@ -371,4 +386,17 @@ void DrawingArea::changeNbLines(int n) {
 
 void DrawingArea::changeRBrush(int r) {
 	rBrush = r;
+}
+
+void DrawingArea::computeHorizon() {
+	if(vanishPoints.size() < 2) {
+		if(horizontalLine) delete horizontalLine;
+		horizontalLine = nullptr;
+	}
+	std::vector<PDD> ps;
+	for(const DPoint &p : vanishPoints)
+		ps.emplace_back(p.get_point0().x(), p.get_point0().y());
+	DLine line = pca_pdd(ps, image0.width(), image0.height());
+	if(!horizontalLine) horizontalLine = new DLine(line);
+	else *horizontalLine = line;
 }

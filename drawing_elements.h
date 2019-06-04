@@ -27,7 +27,8 @@ public:
 	void select() { selected = !selected; }
 	void setGroup(int g) { group = g; }
 
-	QPoint get_point() const { return p; }
+	const QPoint& get_point() const { return p; }
+	const QPoint& get_point0() const { return p0; }
 	bool is_selected() const { return selected; }
 	int get_group() const { return group; }
 

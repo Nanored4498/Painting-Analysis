@@ -1,15 +1,17 @@
 #include <drawing_elements.h>
 
 DLine::DLine(const PA::Line &li, int W, int H): li(li) {
+	W *= 10;
+	H *= 10;
 	int x0, y0, x1, y1;
-	W --, H --;
-	if(li.b > H) x0 = int((H - li.b) / li.a), y0 = H;
-	else if(li.b < 0) x0 = int(- li.b / li.a), y0 = 0;
-	else x0 = 0, y0 = int(li.b);
-	double y = li.b + W*li.a;
-	if(y > H) x1 = W + int((H - y) / li.a), y1 = H;
-	else if(y < 0) x1 = W - int(y / li.a), y1 = 0;
-	else x1 = W, y1 = int(y);
+	double y = li.b - W * li.a;
+	if(y > H) x0 = -W + (H - y) / li.a, y0 = H;
+	else if(y < -H) x0 = -W + (-H - y) / li.a, y0 = -H;
+	else x0 = -W, y0 = y;
+	y = li.b + W*li.a;
+	if(y > H) x1 = W + (H - y) / li.a, y1 = H;
+	else if(y < -H) x1 = W + (-H - y) / li.a, y1 = -H;
+	else x1 = W, y1 = y;
 	l0 = QLine(x0, y0, x1, y1);
 	co = qCos(li.theta);
 	si = qSin(li.theta);

@@ -51,6 +51,7 @@ private:
 	void resize();
 	void resizeLines();
 	void eraseSobel(double px, double py);
+	void computeHorizon();
 
 	QImage image, image0;
 	uchar* im = nullptr;
@@ -75,6 +76,7 @@ private:
 	unsigned int nbLines = NBLINES0;
 	std::vector<DLine> lines;
 	std::vector<DPoint> vanishPoints;
+	DLine* horizontalLine = nullptr;
 };
 
 #endif // DRAWINGAREA_H
