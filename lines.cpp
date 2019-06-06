@@ -169,7 +169,7 @@ void PA::save_sobel(const char *filename, PA::ProblemData *data) {
 		#endif
 		double n = data->no[i] * 255.0 / data->m;
 		if(n < 12) n = 0;
-		else n = std::pow(n, 0.5) * std::pow(255.0, 0.5);
+		else n = std::pow(n, 0.42) * std::pow(255.0, 0.58);
 		res[3*i] = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 		res[3*i+1] = std::max(0.0, 1-std::abs(3*t-1))*n;
 		res[3*i+2] = std::max(0.0, 1-std::abs(3*t-2))*n;
@@ -295,10 +295,11 @@ PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 	return PA::Line(a, b);
 }
 
-std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, int R, int T, unsigned int nbLines) {
+std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	double diag = std::sqrt(data->W*data->W + data->H*data->H);
-	R = 1.93 * std::pow(diag, 0.8);
-	T = 13.3 * std::pow(diag, 0.5);
+	int R = 1.93 * std::pow(diag, 0.8);
+	int T = 13.3 * std::pow(diag, 0.5);
+	std::cout << R << " " << T << std::endl;
 	double *res = new double[R*T];
 	for(int i = 0; i < R*T; i++) res[i] = 0;
 	double r_step = diag / R;
@@ -328,9 +329,9 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, int R, int T, unsigne
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
 	std::vector<std::pair<int, int>> added;
 	std::vector<PA::Line> ls;
-	int min_d = int(0.015*0.015*(R*R + T*T));
+	int min_d = int(0.02*0.02*(R*R + T*T));
 	unsigned int i = 0;
-	while(ls.size() < nbLines) {
+	while(ls.size() < 500 && i < lines.size()) {
 		bool add = true;
 		int x = lines[i] % R;
 		int y = lines[i] / R;

@@ -75,7 +75,7 @@ private:
 	double co, si;
 	QLine l0, l;
 	bool selected = false;
-	int group = 0;
+	int group = -1;
 };
 
 DLine pca_pdd(const std::vector<PDD> &ps, int W, int H);

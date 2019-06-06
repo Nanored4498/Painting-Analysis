@@ -5,6 +5,7 @@
 #include <QApplication>
 
 #include <set>
+#include <algorithm>
 
 #include <stb_image.h>
 
@@ -31,6 +32,7 @@ bool DrawingArea::loadImage(const QString &fileName) {
 		delete pa_data;
 		pa_data = nullptr;
 	}
+	candidate_lines.clear();
 	lines.clear();
 	vanishPoints.clear();
 	computeHorizon();
@@ -204,6 +206,32 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		else action = UNGROUP;
 		emit selected(action);
 		update();
+	/*** Add line ***/
+	} else if(plotOriginal && event->button() == Qt::RightButton) {
+		unsigned int previous_size = lines.size();
+		auto beg = std::remove_if(lines.begin(),
+								lines.end(),
+								[px, py](const DLine &l) { return l.get_dist(px, py) < 4; }
+					);
+		for(auto l = beg; l < lines.end(); l++) l->setGroup(-1);
+		lines.erase(beg, lines.end());
+		if(lines.size() < previous_size) {
+			update();
+			return;
+		}
+		double s = scale * scale_im;
+		QPoint dp((width() - scale_im*image0.width())/2, (height() - scale_im*image0.height())/2);
+		QPoint sp(sx, sy);
+		for(DLine &l : candidate_lines) {
+			if(l.get_group() >= 0) continue;
+			l.update(s, sp, dp);
+			if(l.get_dist(px, py) < 4) {
+				l.setGroup(0);
+				lines.push_back(l);
+				update();
+				break;
+			}
+		}
 	/*** Brush or move camera ***/
 	} else if(event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) {
 		px -= (width() - scale_im*image0.width()) / 2;
@@ -250,6 +278,7 @@ void DrawingArea::mouseMoveEvent(QMouseEvent *event) {
 void DrawingArea::computeSobel() {
 	if(!im) return;
 	if(pa_data) delete pa_data;
+	candidate_lines.clear();
 	lines.clear();
 	vanishPoints.clear();
 	int W = image0.width(), H = image0.height();
@@ -261,11 +290,17 @@ void DrawingArea::computeSobel() {
 
 void DrawingArea::findLines() {
 	int W = image0.width(), H = image0.height();
-	std::vector<PA::Line> ls = PA::get_lines(pa_data, 750, 550, nbLines);
+	candidate_lines.clear();
+	std::vector<PA::Line> ls = PA::get_lines(pa_data);
+	for(const PA::Line &l : ls)
+		candidate_lines.emplace_back(l, W, H);
 	lines.clear();
 	vanishPoints.clear();
-	for(const PA::Line &l : ls)
-		lines.emplace_back(l, W, H);
+	unsigned int i = 0;
+	while(i < candidate_lines.size() && i < nbLines) {
+		candidate_lines[i].setGroup(0);
+		lines.push_back(candidate_lines[i++]);
+	}
 	computeHorizon();
 	resizeLines();
 	update();
