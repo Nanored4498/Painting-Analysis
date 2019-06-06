@@ -2,7 +2,7 @@
 #include <iostream>
 #include <map>
 #include <algorithm>
-#include <stb_image_write.h>
+#include "stb_image_write.h"
 
 #define uchar unsigned char
 #ifdef MODE_PI
@@ -37,6 +37,41 @@ void bilateral(uchar* in, uchar* out, int size, double sigma1, double sigma2, in
 	}
 }
 
+#define Xn 95.0
+#define Yn 100.0
+#define Zn 108.9
+#define Delta (6.0 / 29.0)
+const static double delta2 = std::pow(Delta, 2.0);
+const static double delta3 = std::pow(Delta, 3.0);
+double f_xyz_lab(double t) {
+	if(t > delta3) return std::pow(t, 1.0/3.0);
+	return t / (3 * delta2) + 4.0 / 29.0;
+}
+struct Color {
+	double x, y, z;
+	Color(double x=0, double y=0, double z=0): x(x), y(y), z(z) {}
+	Color operator/(double d) const { return Color(x/d, y/d, z/d); }
+	double get(int i) { return i == 0 ? x : (i == 1 ? y : z); }
+};
+std::ostream& operator<<(std::ostream &stream, const Color &c) {
+	return stream << "(" << c.x << ", " << c.y << ", " << c.z << ")";
+}
+Color xyz_to_lab(const Color &c) {
+	double L = 116 * f_xyz_lab(c.y / Yn) - 16;
+	double a = 500 * (f_xyz_lab(c.x / Xn) - f_xyz_lab(c.y / Yn));
+	double b = 200 * (f_xyz_lab(c.y / Yn) - f_xyz_lab(c.z / Zn));
+	return Color(L, a, b);
+}
+Color rgb_to_xyz(const Color &c) {
+	double X = 0.49000 * c.x + 0.31000 * c.y + 0.20000 * c.z;
+	double Y = 0.17697 * c.x + 0.81240 * c.y + 0.01063 * c.z;
+	double Z = 0.00000 * c.x + 0.01000 * c.y + 0.99000 * c.z;
+	return Color(X, Y, Z) / 0.17697 / 255.0;
+}
+Color rgb_to_lab(const Color &c) {
+	return xyz_to_lab(rgb_to_xyz(c));
+}
+
 double sobel(uchar* im, double* &norm, double* &angle, int W, int H) {
 	norm = new double[W*H];
 	angle = new double[W*H];
@@ -45,17 +80,37 @@ double sobel(uchar* im, double* &norm, double* &angle, int W, int H) {
 	for(int i = 0; i < H; i++)
 		norm[i*W] = norm[W-1+i*W] = 0;
 	double max_no = 0;
+	bool use_lab = W+H > 3000;
 	#pragma omp parallel for reduction(max: max_no)
 	for(int x = 1; x < W-1; x++) {
 		for(int y = 1; y < H-1; y++) {
 			double no = 0;
 			double co = 0, si = 0;
 			int pix = 3*(x + y*W);
+			Color neighboors[3][3];
+			for(int i = 0; i < 3; i++) {
+				for(int j = 0; j < 3; j++) {
+					int pix2 = pix+3*(i-1)+3*(j-1)*W;
+					Color c = Color(im[pix2], im[pix2+1], im[pix2+2]);
+					neighboors[i][j] = rgb_to_lab(c);
+				}
+			}
+			double ax, ay;
 			for(int c = 0; c < 3; c++) {
-				double ax = 3 * im[pix+3+3*W+c] + 10 * im[pix+3+c] + 3 * im[pix+3-3*W+c]
-							- 3 * im[pix-3+3*W+c] - 10 * im[pix-3+c] - 3 * im[pix-3-3*W+c];
-				double ay = 3 * im[pix+3+3*W+c] + 10 * im[pix+3*W+c] + 3 * im[pix-3+3*W+c]
-							- 3 * im[pix+3-3*W+c] - 10 * im[pix-3*W+c] - 3 * im[pix-3-3*W+c];
+				if(use_lab) {
+					ax = 3 * neighboors[2][2].get(c) + 10 * neighboors[2][1].get(c) + 3 * neighboors[2][0].get(c)
+						- 3 * neighboors[0][2].get(c) - 10 * neighboors[0][1].get(c) - 3 * neighboors[0][0].get(c);
+					ay = 3 * neighboors[2][2].get(c) + 10 * neighboors[1][2].get(c) + 3 * neighboors[0][2].get(c)
+						- 3 * neighboors[2][0].get(c) - 10 * neighboors[1][0].get(c) - 3 * neighboors[0][0].get(c);
+				} else {
+					ax = 3 * im[pix+3+3*W+c] + 10 * im[pix+3+c] + 3 * im[pix+3-3*W+c]
+						- 3 * im[pix-3+3*W+c] - 10 * im[pix-3+c] - 3 * im[pix-3-3*W+c];
+					ay = 3 * im[pix+3+3*W+c] + 10 * im[pix+3*W+c] + 3 * im[pix-3+3*W+c]
+						- 3 * im[pix+3-3*W+c] - 10 * im[pix-3*W+c] - 3 * im[pix-3-3*W+c];
+				}
+				#ifdef MODE_PI
+				if(ax < 0) ax = -ax, ay = -ay;
+				#endif
 				double n = ax*ax+ay*ay;
 				no += n;
 				double ns = std::sqrt(n);
@@ -86,11 +141,19 @@ void smooth_sep(double* norm, double* &angle, int W, int H) {
 			for(int a = 0; a < 3; a++) {
 				for(int b = 0; b < 3; b++) {
 					int p2 = (i+a-1) + (j+b-1)*W;
+					#ifdef MODE_PI
+					co += Mss[a][b] * norm[p2] * std::cos(2.0*angle[p2]);
+					si += Mss[a][b] * norm[p2] * std::sin(2.0*angle[p2]);
+					#else
 					co += Mss[a][b] * norm[p2] * std::cos(angle[p2]);
 					si += Mss[a][b] * norm[p2] * std::sin(angle[p2]);
+					#endif
 				}
 			}
 			a2[pix] = std::atan2(si, co);
+			#ifdef MODE_PI
+			a2[pix] /= 2.0;
+			#endif
 		}
 	}
 	delete[] angle;
@@ -99,7 +162,6 @@ void smooth_sep(double* norm, double* &angle, int W, int H) {
 
 void PA::save_sobel(const char *filename, PA::ProblemData *data) {
 	uchar *res = new uchar[data->W*data->H*3];
-	int count = 0;
 	for(int i = 0; i < data->W*data->H; i++) {
 		double t = data->an[i] / CYCLE;
 		#ifndef MODE_PI
@@ -107,7 +169,7 @@ void PA::save_sobel(const char *filename, PA::ProblemData *data) {
 		#endif
 		double n = data->no[i] * 255.0 / data->m;
 		if(n < 12) n = 0;
-		else count ++, n = 255.0;
+		else n = std::pow(n, 0.5) * std::pow(255.0, 0.5);
 		res[3*i] = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 		res[3*i+1] = std::max(0.0, 1-std::abs(3*t-1))*n;
 		res[3*i+2] = std::max(0.0, 1-std::abs(3*t-2))*n;
@@ -159,11 +221,13 @@ void clean(double *n, int W, int H, double threshold, unsigned int min_size) {
 		if(u.w[u.find(i)] < min_size) n[i] = 0;
 }
 
-PA::ProblemData* PA::applySobel(uchar* im, int W, int H, int num_smooth_pass) {
+PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
 	bilateral(im, im, 3, 5, 3, W, H);
+	// stbi_write_png("bilateral.png", W, H, 3, im, 0);
+	int num_smooth_pass = 0.003 * std::sqrt(W*W + H*H);
 	double *no, *an;
 	double m = sobel(im, no, an, W, H);
-	clean(no, W, H, 0.05*m, 42);
+	clean(no, W, H, 0.07*m, 0.0172 * (W + H));
 	for(int i = 0; i < num_smooth_pass; i++)
 		smooth_sep(no, an, W, H);
 	#ifdef MODE_PI
@@ -232,9 +296,12 @@ PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 }
 
 std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, int R, int T, unsigned int nbLines) {
+	double diag = std::sqrt(data->W*data->W + data->H*data->H);
+	R = 1.93 * std::pow(diag, 0.8);
+	T = 13.3 * std::pow(diag, 0.5);
 	double *res = new double[R*T];
 	for(int i = 0; i < R*T; i++) res[i] = 0;
-	double r_step = std::sqrt(data->W*data->W + data->H*data->H) / R;
+	double r_step = diag / R;
 	double t_step = 1.5 * M_PI / T;
 	for(int x = 0; x < data->W; x++) {
 		for(int y = 0; y < data->H; y++) {

@@ -253,7 +253,7 @@ void DrawingArea::computeSobel() {
 	lines.clear();
 	vanishPoints.clear();
 	int W = image0.width(), H = image0.height();
-	pa_data = PA::applySobel(im, W, H, 5);
+	pa_data = PA::applySobel(im, W, H);
 	PA::save_sobel("sobel.png", pa_data);
 	sobelIm.load("sobel.png");
 	emit sobelComputed();
