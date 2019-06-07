@@ -329,9 +329,9 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
 	std::vector<std::pair<int, int>> added;
 	std::vector<PA::Line> ls;
-	int min_d = int(0.02*0.02*(R*R + T*T));
+	int min_d = int(0.015*0.015*(R*R + T*T));
 	unsigned int i = 0;
-	while(ls.size() < 500 && i < lines.size()) {
+	while(ls.size() < 200 && i < lines.size()) {
 		bool add = true;
 		int x = lines[i] % R;
 		int y = lines[i] / R;

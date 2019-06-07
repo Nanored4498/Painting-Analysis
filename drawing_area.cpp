@@ -49,7 +49,7 @@ void DrawingArea::resizeLines() {
 	double s = scale * scale_im;
 	QPoint dp((width() - scale_im*image0.width())/2, (height() - scale_im*image0.height())/2);
 	QPoint sp(sx, sy);
-	for(DLine &l : lines) l.update(s, sp, dp);
+	for(DLine *l : lines) l->update(s, sp, dp);
 	for(DPoint &p : vanishPoints) p.update(s, sp, dp);
 	if(horizontalLine) horizontalLine->update(s, sp, dp);
 }
@@ -91,11 +91,11 @@ void DrawingArea::paintEvent(QPaintEvent *event) {
 	painter.drawImage(im_x, im_y, image);
 	double size_mul = qPow(scale, 0.3);
 	QPen selCol(Qt::cyan, 1.5*size_mul);
-	for(const DLine &l : lines) {
-		if(l.is_selected()) painter.setPen(selCol);
-		else if(l.get_group() == 0) painter.setPen(QPen(colors[0], 1.2*size_mul));
-		else painter.setPen(QPen(colors[1 + (l.get_group()-1) % (colors.size()-1)], 1.2*size_mul));
-		painter.drawLine(l.get_line());
+	for(const DLine *l : lines) {
+		if(l->is_selected()) painter.setPen(selCol);
+		else if(l->get_group() == 0) painter.setPen(QPen(colors[0], 1.2*size_mul));
+		else painter.setPen(QPen(colors[1 + (l->get_group()-1) % (colors.size()-1)], 1.2*size_mul));
+		painter.drawLine(l->get_line());
 	}
 	QPen unselColP(Qt::red, 5*size_mul), selColP(QColor(240, 120, 0), 6*size_mul);
 	for(const DPoint &p : vanishPoints) {
@@ -160,7 +160,7 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		// If shift is not pressed, unselect all elements already selected
 		if(!(QApplication::keyboardModifiers() & Qt::ShiftModifier)) {
 			for(DPoint &p : vanishPoints) p.unselect();
-			for(DLine &l : lines) l.unselect();
+			for(DLine *l : lines) l->unselect();
 		}
 		// Is a point already selected
 		bool psel = false;
@@ -169,8 +169,8 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 				psel = true;
 		// Is a line already selected
 		bool lsel = false;
-		for(DLine &l : lines)
-			if(l.is_selected())
+		for(DLine *l : lines)
+			if(l->is_selected())
 				lsel = true;
 		std::set<int> groups;
 		if(psel || !lsel) {
@@ -179,26 +179,26 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 				if(p.is_selected()) groups.insert(p.get_group());
 			}
 		}
-		for(DLine &l : lines) {
-			if(l.get_dist(px, py) < 5) l.select();
-			if(l.is_selected()) groups.insert(l.get_group());
+		for(DLine *l : lines) {
+			if(l->get_dist(px, py) < 5) l->select();
+			if(l->is_selected()) groups.insert(l->get_group());
 		}
 		if(!psel && groups.count(0) > 0) {
 			for(DPoint &p : vanishPoints) p.unselect();
-			for(DLine &l : lines)
-				if(l.get_group() != 0) l.unselect();
+			for(DLine *l : lines)
+				if(l->get_group() != 0) l->unselect();
 		} else {
 			groups.erase(0);
-			for(DLine &l : lines)
-				if((groups.count(l.get_group()) > 0) != l.is_selected())
-					l.select();
+			for(DLine *l : lines)
+				if((groups.count(l->get_group()) > 0) != l->is_selected())
+					l->select();
 			for(DPoint &p : vanishPoints)
 				if((groups.count(p.get_group()) > 0) != p.is_selected())
 					p.select();
 		}
 		bool sel = false;
-		for(DLine &l : lines)
-			if(l.is_selected())
+		for(DLine *l : lines)
+			if(l->is_selected())
 				sel = true;
 		if(!sel) action = UNSELECTED;
 		else if(!psel && groups.count(0) > 0) action = VANISH_POINT;
@@ -211,9 +211,9 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		unsigned int previous_size = lines.size();
 		auto beg = std::remove_if(lines.begin(),
 								lines.end(),
-								[px, py](const DLine &l) { return l.get_dist(px, py) < 4; }
+								[px, py](DLine *l) { return l->get_dist(px, py) < 4; }
 					);
-		for(auto l = beg; l < lines.end(); l++) l->setGroup(-1);
+		for(auto l = beg; l < lines.end(); l++) (*l)->setGroup(-1);
 		lines.erase(beg, lines.end());
 		if(lines.size() < previous_size) {
 			update();
@@ -227,7 +227,7 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 			l.update(s, sp, dp);
 			if(l.get_dist(px, py) < 4) {
 				l.setGroup(0);
-				lines.push_back(l);
+				lines.push_back(&l);
 				update();
 				break;
 			}
@@ -299,7 +299,7 @@ void DrawingArea::findLines() {
 	unsigned int i = 0;
 	while(i < candidate_lines.size() && i < nbLines) {
 		candidate_lines[i].setGroup(0);
-		lines.push_back(candidate_lines[i++]);
+		lines.push_back(&candidate_lines[i++]);
 	}
 	computeHorizon();
 	resizeLines();
@@ -311,10 +311,10 @@ void DrawingArea::selectionAction() {
 		double s, c, r;
 		double s_cc = 0, s_cs = 0, s_ss = 0, s_cr = 0, s_sr = 0;
 		std::set<int> groups;
-		for(const DLine &l : lines) {
-			groups.insert(l.get_group());
-			if(!l.is_selected()) continue;
-			l.getCSR(c, s, r);
+		for(const DLine *l : lines) {
+			groups.insert(l->get_group());
+			if(!l->is_selected()) continue;
+			l->getCSR(c, s, r);
 			s_cc += c*c;
 			s_cs += s*c;
 			s_ss += s*s;
@@ -330,16 +330,18 @@ void DrawingArea::selectionAction() {
 		vanishPoints.emplace_back(x, y);
 		int g = 1;
 		while(groups.count(g) > 0) g++;
-		for(DLine &l : lines)
-			if(l.is_selected()) l.setGroup(g);
+		for(DLine *l : lines)
+			if(l->is_selected()) l->setGroup(g);
 		vanishPoints[vanishPoints.size()-1].setGroup(g);
 		vanishPoints[vanishPoints.size()-1].select();
+
 	} else if(action == INTERSECTIONS) {
+
 		std::vector<std::vector<int>> gs;
 		std::vector<int> inds;
 		for(int i = 0; i < int(lines.size()); i++) {
-			if(lines[i].is_selected()) {
-				int g = lines[i].get_group();
+			if(lines[i]->is_selected()) {
+				int g = lines[i]->get_group();
 				while(g >= int(gs.size())) gs.emplace_back();
 				if(gs[g].empty()) inds.push_back(g);
 				gs[g].push_back(i);
@@ -349,14 +351,14 @@ void DrawingArea::selectionAction() {
 		for(int i : inds) {
 			double mc = 0, ms = 0;
 			for(int a : gs[i]) {
-				double t = 2 * lines[a].getTheta();
+				double t = 2 * lines[a]->getTheta();
 				mc += qCos(t);
 				ms += qSin(t);
 			}
 			double t = qTan(qAtan2(ms, mc) / 2);
 			auto fun = [this, t](int i) {
 				double c, s, r;
-				lines[i].getCSR(c, s, r);
+				lines[i]->getCSR(c, s, r);
 				return r / (c + s*t);
 			};
 			std::sort(gs[i].begin(), gs[i].end(), [&fun](int a, int b) { return fun(a) < fun(b); });
@@ -367,7 +369,7 @@ void DrawingArea::selectionAction() {
 				for(int a : gs[inds[i]]) {
 					std::vector<PDD> vp;
 					for(int b : gs[inds[j]]) {
-						PDD p = lines[a].getIntersection(lines[b]);
+						PDD p = lines[a]->getIntersection(*lines[b]);
 						vp.push_back(p);
 					}
 					vvp.push_back(vp);
@@ -382,20 +384,32 @@ void DrawingArea::selectionAction() {
 						if(p.first >= 0 && p.first < W && p.second >= 0 && p.second < H)
 							ps.push_back(p);
 					}
-					if(ps.size() > 1) lines.push_back(pca_pdd(ps, W, H));
+					if(ps.size() > 1){
+						DLine l = pca_pdd(ps, W, H);
+						l.setGroup(0);
+						candidate_lines.push_back(l);
+						lines.push_back(&candidate_lines[candidate_lines.size()-1]);
+					}
 					ps.clear();
 					for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
 						PDD p = vvp[n-1-a][s-a];
 						if(p.first >= 0 && p.first < W && p.second >= 0 && p.second < H)
 							ps.push_back(p);
 					}
-					if(ps.size() > 1) lines.push_back(pca_pdd(ps, W, H));
+					if(ps.size() > 1) {
+						DLine l = pca_pdd(ps, W, H);
+						l.setGroup(0);
+						candidate_lines.push_back(l);
+						lines.push_back(&candidate_lines[candidate_lines.size()-1]);
+					}
 				}
 			}
 		}
+
 	} else if(action == UNGROUP) {
-		for(DLine &l : lines)
-			if(l.is_selected()) l.setGroup(0);
+
+		for(DLine *l : lines)
+			if(l->is_selected()) l->setGroup(0);
 		int V = vanishPoints.size();
 		for(int i = 0; i < V; i++) {
 			if(vanishPoints[i].is_selected()) {

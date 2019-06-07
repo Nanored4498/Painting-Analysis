@@ -75,7 +75,7 @@ private:
 
 	unsigned int nbLines = NBLINES0;
 	std::vector<DLine> candidate_lines;
-	std::vector<DLine> lines;
+	std::vector<DLine*> lines;
 	std::vector<DPoint> vanishPoints;
 	DLine* horizontalLine = nullptr;
 };
