@@ -50,6 +50,7 @@ protected:
 private:
 	void resize();
 	void resizeLines();
+	void shiftSobelPixel(int x, int y, bool unbrush=false);
 	void eraseSobel(double px, double py);
 	void computeHorizon();
 

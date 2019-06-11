@@ -160,19 +160,32 @@ void smooth_sep(double* norm, double* &angle, int W, int H) {
 	angle = a2;
 }
 
+
+uint pixelColori(int i, PA::ProblemData *data) {
+	double t = data->an[i] / CYCLE;
+	#ifndef MODE_PI
+	t += 0.5;
+	#endif
+	double n = data->no[i] * 255.0 / data->m;
+	if(n < 7) n = 0;
+	else n = 200 * std::pow(n / 255.0, 0.33) + 55;
+	uint res = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
+	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-1))*n;
+	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-2))*n;
+	return res;
+}
+
+uint PA::pixelColor(int x, int y, PA::ProblemData *data) {
+	return pixelColori(x + y * data->W, data);
+}
+
 void PA::save_sobel(const char *filename, PA::ProblemData *data) {
 	uchar *res = new uchar[data->W*data->H*3];
 	for(int i = 0; i < data->W*data->H; i++) {
-		double t = data->an[i] / CYCLE;
-		#ifndef MODE_PI
-		t += 0.5;
-		#endif
-		double n = data->no[i] * 255.0 / data->m;
-		if(n < 7) n = 0;
-		else n = 200 * std::pow(n / 255.0, 0.33) + 55;
-		res[3*i] = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
-		res[3*i+1] = std::max(0.0, 1-std::abs(3*t-1))*n;
-		res[3*i+2] = std::max(0.0, 1-std::abs(3*t-2))*n;
+		uint col = pixelColori(i, data);
+		res[3*i+2] = col & 0xff;
+		res[3*i+1] = (col >>= 8) & 0xff;
+		res[3*i] = (col >>= 8) & 0xff;
 	}
 	stbi_write_png(filename, data->W, data->H, 3, res, 0);
 }

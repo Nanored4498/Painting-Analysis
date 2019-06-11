@@ -128,26 +128,33 @@ void DrawingArea::wheelEvent(QWheelEvent *event) {
 	resize();
 }
 
+void DrawingArea::shiftSobelPixel(int x, int y, bool unbrush) {
+	if(unbrush) {
+		pa_data->no[x + y*pa_data->W] = qAbs(pa_data->no[x + y*pa_data->W]),
+		sobelIm.setPixel(x, y, PA::pixelColor(x, y, pa_data));
+	} else {
+		pa_data->no[x + y*pa_data->W] = -qAbs(pa_data->no[x + y*pa_data->W]),
+		sobelIm.setPixel(x, y, 0xffffff);
+	}
+}
+
 void DrawingArea::eraseSobel(double px, double py) {
 	double s = scale_im * scale;
 	int ix = int(sx + px/s), iy = int(sy + py/s);
 	int dx = 0;
 	double r2 = rBrush*rBrush / (s*s);
+	bool unbrush = QApplication::keyboardModifiers() & Qt::ShiftModifier;
 	while(dx*dx <= r2) {
 		int dy = 0;
 		while(dx*dx+dy*dy <= r2) {
 			if(sobelIm.rect().contains(ix+dx, iy+dy) && (sobelIm.pixel(ix+dx, iy+dy) & 0xffffff))
-				pa_data->no[ix+dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy+dy)*pa_data->W]),
-				sobelIm.setPixel(ix+dx, iy+dy, 0xffffff);
+				shiftSobelPixel(ix+dx, iy+dy, unbrush);
 			if(sobelIm.rect().contains(ix-dx, iy+dy) && (sobelIm.pixel(ix-dx, iy+dy) & 0xffffff))
-				pa_data->no[ix-dx + (iy+dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy+dy)*pa_data->W]),
-				sobelIm.setPixel(ix-dx, iy+dy, 0xffffff);
+				shiftSobelPixel(ix-dx, iy+dy, unbrush);
 			if(sobelIm.rect().contains(ix+dx, iy-dy) && (sobelIm.pixel(ix+dx, iy-dy) & 0xffffff))
-				pa_data->no[ix+dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix+dx + (iy-dy)*pa_data->W]),
-				sobelIm.setPixel(ix+dx, iy-dy, 0xffffff);
+				shiftSobelPixel(ix+dx, iy-dy, unbrush);
 			if(sobelIm.rect().contains(ix-dx, iy-dy) && (sobelIm.pixel(ix-dx, iy-dy) & 0xffffff))
-				pa_data->no[ix-dx + (iy-dy)*pa_data->W] = -qAbs(pa_data->no[ix-dx + (iy-dy)*pa_data->W]),
-				sobelIm.setPixel(ix-dx, iy-dy, 0xffffff);
+				shiftSobelPixel(ix-dx, iy-dy, unbrush);
 			dy ++;
 		}
 		dx ++;
