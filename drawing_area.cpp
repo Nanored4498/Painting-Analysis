@@ -220,12 +220,14 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 	/*** Add line ***/
 	} else if(plotOriginal && event->button() == Qt::RightButton) {
 		unsigned int previous_size = lines.size();
-		auto beg = std::remove_if(lines.begin(),
-								lines.end(),
-								[px, py](DLine *l) { return l->get_dist(px, py) < 4; }
-					);
-		for(auto l = beg; l < lines.end(); l++) (*l)->setGroup(-1);
-		lines.erase(beg, lines.end());
+		for(int i = 0; i < lines.size(); i++) {
+			if(lines[i]->get_dist(px, py) < 4) {
+				lines[i]->setGroup(-1);
+				lines[i] = lines.back();
+				lines.pop_back();
+				i--;
+			}
+		}
 		if(lines.size() < previous_size) {
 			update();
 			return;
