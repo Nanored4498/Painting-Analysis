@@ -168,8 +168,8 @@ void PA::save_sobel(const char *filename, PA::ProblemData *data) {
 		t += 0.5;
 		#endif
 		double n = data->no[i] * 255.0 / data->m;
-		if(n < 12) n = 0;
-		else n = std::pow(n, 0.42) * std::pow(255.0, 0.58);
+		if(n < 7) n = 0;
+		else n = 200 * std::pow(n / 255.0, 0.33) + 55;
 		res[3*i] = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 		res[3*i+1] = std::max(0.0, 1-std::abs(3*t-1))*n;
 		res[3*i+2] = std::max(0.0, 1-std::abs(3*t-2))*n;
@@ -299,7 +299,6 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	double diag = std::sqrt(data->W*data->W + data->H*data->H);
 	int R = 1.93 * std::pow(diag, 0.8);
 	int T = 13.3 * std::pow(diag, 0.5);
-	std::cout << R << " " << T << std::endl;
 	double *res = new double[R*T];
 	for(int i = 0; i < R*T; i++) res[i] = 0;
 	double r_step = diag / R;
@@ -320,7 +319,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 				int ri = int(r / r_step);
 				int ti = int((tt + M_PI/2) / t_step);
 				int p = ri + ti * R;
-				res[p] += (1.0 - std::pow(std::abs(std::sin(tt - data->an[pix])), 0.3)) * (1.0 + 1.5 * data->no[pix]/data->m);
+				res[p] += (1.0 - std::pow(std::abs(std::sin(tt - data->an[pix])), 0.5)) * (1.0 + 1.5 * data->no[pix]/data->m);
 			}
 		}
 	}
@@ -349,29 +348,30 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 		double r = (x + 0.5) * r_step;
 		double t = (y + 0.5) * t_step - M_PI/2;
 		ls.emplace_back(r, t, true);
-		// double max_d = 0.008 * std::sqrt(W*W + H*H);
+
+		// double max_d = 0.008 * std::sqrt(data->W*data->W + data->H*data->H);
 		// double co = std::cos(t), si = std::sin(t);
 		// std::vector<int> ps;
 		// Line l(r, t, true);
-		// for(int x = 0; x < W; x++) {
+		// for(int x = 0; x < data->W; x++) {
 		// 	int y0 = l.a * x + l.b;
 		// 	int y = y0;
 		// 	while(true) {
 		// 		double d = std::abs(co*x + si*y - r);
-		// 		if(d > max_d || y >= H || y < 0) {
+		// 		if(d > max_d || y >= data->H || y < 0) {
 		// 			if(y >= y0) {
 		// 				y = y0-1;
 		// 				continue;
 		// 			} else break;
 		// 		}
-		// 		int pix = x + y*W;
-		// 		if(no[pix] >= threshold && std::abs(std::sin(t - an[pix])) < 0.2)
+		// 		int pix = x + y*data->W;
+		// 		if(data->no[pix] > 0 && std::abs(std::sin(t - data->an[pix])) < 0.25)
 		// 			ps.push_back(pix);
 		// 		if(y >= y0) y ++;
 		// 		else y --;
 		// 	}
 		// }
-		// Line l2 = pca(ps, no, an, W);
+		// Line l2 = pca(ps, data->no, data->an, data->W);
 		// ls.push_back(l2);
 	}
 	delete [] res;

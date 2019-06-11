@@ -113,9 +113,13 @@ void DrawingArea::wheelEvent(QWheelEvent *event) {
 	if(image0.isNull()) return;
 	double newScale = scale * qPow(1.05, double(event->delta()) / 100.0);
 	newScale = qMin(15.0, qMax(1.0, newScale));
-	double px = event->pos().x() - (width() - scale_im*image0.width())/2;
-	double py = event->pos().y() - (height() - scale_im*image0.height())/2;
-	if(px < 0 || px >= image.width() || py < 0 || py >= image.height()) return;
+	double px = event->pos().x();
+	double py = event->pos().y();
+	double dx = (width() - image.width()) / 2.0;
+	double dy = (height() - image.height()) / 2.0;
+	if(px < dx || px >= width()-dx || py < dy || py >= height()-dy) return;
+	px -= (width() - scale_im*image0.width()) / 2.0;
+	py -= (height() - scale_im*image0.height()) / 2.0;
 	double s = (1 - scale/newScale) / scale_im / scale;
 	sx += px*s;
 	sy += py*s;
@@ -234,9 +238,11 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		}
 	/*** Brush or move camera ***/
 	} else if(event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) {
+		double dx = (width() - image.width()) / 2.0;
+		double dy = (height() - image.height()) / 2.0;
+		if(px < dx || px >= width()-dx || py < dy || py >= height()-dy) return;
 		px -= (width() - scale_im*image0.width()) / 2;
 		py -= (height() - scale_im*image0.height()) / 2;
-		if(px < 0 || px > image.width() || py < 0 || py > image.height()) return;
 		MidButPressed = event->button() == Qt::MiddleButton;
 		rightButPressed = !MidButPressed;
 		pressPos = event->pos();
