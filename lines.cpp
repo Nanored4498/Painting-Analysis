@@ -121,7 +121,7 @@ uint pixelColori(int i, PA::ProblemData *data) {
 	t += 0.5;
 	#endif
 	double n = data->no[i] * 255.0 / data->m;
-	if(n < 7) n = 0;
+	if(n < 5) n = 0;
 	else n = 200 * std::pow(n / 255.0, 0.33) + 55;
 	uint res = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-1))*n;
@@ -191,10 +191,11 @@ void clean(double *n, int W, int H, double threshold, unsigned int min_size) {
 PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
 	double diag = std::sqrt(W*W + H*H);
 	double sigma = std::pow(diag, 0.3) * 0.3;
+	double sigma_col = 250.0 / pow(diag, 0.4);
 	Color *im2 = new Color[W*H];
 	for(int i = 0; i < W*H; i++)
 		im2[i] = rgb_to_lab(Color(im[3*i], im[3*i+1], im[3*i+2]));
-	bilateral(im2, im2, sigma+0.5, 20, sigma, W, H);
+	bilateral(im2, im2, sigma+0.5, sigma_col, sigma, W, H);
 	for(int i = 0; i < W*H; i++) {
 		Color col = lab_to_rgb(im2[i]);
 		for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
@@ -203,7 +204,7 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
 	int num_smooth_pass = 0.003 * std::sqrt(W*W + H*H);
 	double *no, *an;
 	double m = sobel(im2, no, an, W, H);
-	clean(no, W, H, 0.07*m, 0.0172 * (W + H));
+	clean(no, W, H, 0.0067*sigma_col*m, 0.04 * (W + H));
 	for(int i = 0; i < num_smooth_pass; i++)
 		smooth_sep(no, an, W, H);
 	#ifdef MODE_PI
