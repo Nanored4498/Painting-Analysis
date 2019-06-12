@@ -1,3 +1,5 @@
 *.user
-build
+build*
 .vscode
+*.png
+test

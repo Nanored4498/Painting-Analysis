@@ -233,7 +233,7 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 			return;
 		}
 		double s = scale * scale_im;
-		QPoint dp((width() - scale_im*image0.width())/2, (height() - scale_im*image0.height())/2);
+		QPoint dp((width() - scale_im*image0.width())/2.0, (height() - scale_im*image0.height())/2.0);
 		QPoint sp(sx, sy);
 		for(DLine &l : candidate_lines) {
 			if(l.get_group() >= 0) continue;
