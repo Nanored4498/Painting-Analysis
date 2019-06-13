@@ -309,30 +309,31 @@ PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	auto time = std::chrono::high_resolution_clock::now();
 
-	double diag = std::sqrt(data->W*data->W + data->H*data->H);
+	double W = data->W, H = data->H;
+	double diag = std::sqrt(W*W + H*H);
 	int R = 1.93 * std::pow(diag, 0.8);
 	int T = 13.3 * std::pow(diag, 0.5);
 	double *res = new double[R*T];
 	for(int i = 0; i < R*T; i++) res[i] = 0;
 	double r_step = diag / R;
 	double t_step = 1.5 * M_PI / T;
-	for(int x = 0; x < data->W; x++) {
-		for(int y = 0; y < data->H; y++) {
-			int pix = x + y*data->W;
+	for(int x = 0; x < W; x++) {
+		for(int y = 0; y < H; y++) {
+			int pix = x + y*W;
 			if(data->no[pix] < 0.01*data->m) continue;
-//			double alpha = int((std::atan2(y, x) + 0.5*M_PI) / t_step) * t_step;
-//			double mit = alpha - (0.3333*T + 0.5)*t_step, mat = alpha + 0.3333*T*t_step;
-			for(double tt = -0.5*M_PI + 0.5*t_step; tt < M_PI; tt += t_step) {
+			double ttm = std::atan2(y, x);
+			double tt0 = -0.5*M_PI + (std::floor(ttm / t_step) + 0.5) * t_step;
+			double tt1 = ttm + 0.5*M_PI;
+			for(double tt = tt0; tt <= tt1; tt += t_step) {
+				double diff_angle = std::abs(std::sin(tt - data->an[pix]));
+				if(diff_angle > 0.8) continue;
 				double c = std::cos(tt), s = std::sin(tt);
 				double r = x*c + y*s;
-				if(r < 0) {
-					// std::cerr << tt << " " << mit << " " << mat << "\n";
-					continue;
-				}
+				if(r < 0) continue;
 				int ri = int(r / r_step);
 				int ti = int((tt + M_PI/2) / t_step);
 				int p = ri + ti * R;
-				res[p] += (1.0 - std::pow(std::abs(std::sin(tt - data->an[pix])), 0.66)) * (1.0 + 1.5 * data->no[pix]/data->m);
+				res[p] += (1.0 - std::pow(diff_angle, 0.66)) * (1.0 + 1.5 * data->no[pix]/data->m);
 			}
 		}
 	}
@@ -344,30 +345,36 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	std::vector<int> lines;
 	for(int i = 0; i < R*T; i++) lines.push_back(i);
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
-	std::vector<std::pair<int, int>> added;
 	std::vector<PA::Line> ls;
-	int min_d = int(0.015*0.015*(R*R + T*T));
 	unsigned int i = 0;
 	while(ls.size() < 200 && i < lines.size()) {
 		bool add = true;
 		int x = lines[i] % R;
 		int y = lines[i] / R;
 		i++;
-		for(auto &other : added) {
-			int dx = x - other.first;
-			int dy = y - other.second;
-			if(dx*dx + dy*dy < min_d) {
+		double r = (x + 0.5) * r_step;
+		double t = (y + 0.5) * t_step - M_PI/2;
+		double c = std::cos(t), s = std::sin(t);
+		double x0 = 0, y0 = r/s, x1 = W, y1 = (r - c*W)/s;
+		if(y0 > H) x0 = (r - s*H)/c, y0 = H;
+		else if(y0 < 0) x0 = r/c, y0 = 0;
+		if(y1 > H) x1 = (r - s*H)/c, y1 = H;
+		else if(y1 < 0) x1 = r/c, y1 = 0;
+		for(PA::Line &l : ls) {
+			double co = std::cos(l.theta), si = std::sin(l.theta);
+			double d0 = co * x0 + si * y0 - l.rho;
+			double d1 = co * x1 + si * y1 - l.rho;
+			bool cross = (d0 < 0) != (d1 < 0);
+			double dm = cross ? (d0*d0 + d1*d1) / 2.0 / std::abs(d0 - d1) : std::abs(d0 + d1) / 2.0;
+			if(dm < 0.01 * diag) {
 				add = false;
 				break;
 			}
 		}
 		if(!add) continue;
-		added.push_back({x, y});
-		double r = (x + 0.5) * r_step;
-		double t = (y + 0.5) * t_step - M_PI/2;
 		ls.emplace_back(r, t, true);
 
-		// double max_d = 0.008 * std::sqrt(data->W*data->W + data->H*data->H);
+		// double max_d = 0.008 * diag;
 		// double co = std::cos(t), si = std::sin(t);
 		// std::vector<int> ps;
 		// Line l(r, t, true);
@@ -376,13 +383,13 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 		// 	int y = y0;
 		// 	while(true) {
 		// 		double d = std::abs(co*x + si*y - r);
-		// 		if(d > max_d || y >= data->H || y < 0) {
+		// 		if(d > max_d || y >= H || y < 0) {
 		// 			if(y >= y0) {
 		// 				y = y0-1;
 		// 				continue;
 		// 			} else break;
 		// 		}
-		// 		int pix = x + y*data->W;
+		// 		int pix = x + y*W;
 		// 		if(data->no[pix] > 0 && std::abs(std::sin(t - data->an[pix])) < 0.25)
 		// 			ps.push_back(pix);
 		// 		if(y >= y0) y ++;
