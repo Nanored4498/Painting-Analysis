@@ -8,5 +8,6 @@ int main() {
 	// unsigned char* im = stbi_load("bilateral.png", &W, &H, &C, 3);
 	PA::ProblemData* data = PA::applySobel(im, W, H);
 	PA::save_sobel("sobel.png", data);
+	PA::get_lines(data);
 	return 1;
 }

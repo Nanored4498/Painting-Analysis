@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "stb_image_write.h"
 #include "color.h"
+#include <chrono>
 
 #define uchar unsigned char
 #ifdef MODE_PI
@@ -81,14 +82,13 @@ double sobel(Color* im, double* &norm, double* &angle, int W, int H) {
 }
 
 const double Mss[3][3] = {{0.0925, 0.12, 0.0925}, {0.12, 0.15, 0.12}, {0.0925, 0.12, 0.0925}};
-void smooth_sep(double* norm, double* &angle, int W, int H) {
-	double *a2 = new double[W*H];
+void smooth_sep(double* norm, double* angle, int W, int H, double* res) {
 	#pragma omp parallel for
 	for(int i = 0; i < W; i++) {
 		for(int j = 0; j < H; j++) {
 			int pix = i + j*W;
 			if(i == 0 || i == W-1 || j == 0 || j == H-1) {
-				a2[pix] = angle[pix];
+				res[pix] = angle[pix];
 				continue;
 			}
 			double co = 0, si = 0;
@@ -104,14 +104,12 @@ void smooth_sep(double* norm, double* &angle, int W, int H) {
 					#endif
 				}
 			}
-			a2[pix] = std::atan2(si, co);
+			res[pix] = std::atan2(si, co);
 			#ifdef MODE_PI
-			a2[pix] /= 2.0;
+			res[pix] /= 2.0;
 			#endif
 		}
 	}
-	delete[] angle;
-	angle = a2;
 }
 
 
@@ -192,21 +190,57 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
 	double diag = std::sqrt(W*W + H*H);
 	double sigma = std::pow(diag, 0.3) * 0.3;
 	double sigma_col = 250.0 / pow(diag, 0.4);
+	auto time = std::chrono::high_resolution_clock::now();
+	
 	Color *im2 = new Color[W*H];
 	for(int i = 0; i < W*H; i++)
 		im2[i] = rgb_to_lab(Color(im[3*i], im[3*i+1], im[3*i+2]));
+	auto time2 = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> dtime = time2 - time;
+	std::cerr << "RGB to Lab: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
 	bilateral(im2, im2, sigma+0.5, sigma_col, sigma, W, H);
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Bilateral filter: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
 	for(int i = 0; i < W*H; i++) {
 		Color col = lab_to_rgb(im2[i]);
 		for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
 	}
 	stbi_write_png("bilateral.png", W, H, 3, im, 0);
-	int num_smooth_pass = 0.003 * std::sqrt(W*W + H*H);
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Lab to RGB and saving: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
+	int num_smooth_pass = 0.06 * std::pow(diag, 0.6);
 	double *no, *an;
 	double m = sobel(im2, no, an, W, H);
-	clean(no, W, H, 0.0067*sigma_col*m, 0.04 * (W + H));
-	for(int i = 0; i < num_smooth_pass; i++)
-		smooth_sep(no, an, W, H);
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Sobel filter: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
+	clean(no, W, H, 0.0067*sigma_col*m, 0.06*diag);
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Cleaning: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
+	double *an2 = new double[W*H];
+	for(int i = 0; i < num_smooth_pass; i++) {
+		smooth_sep(no, an, W, H, an2);
+		std::swap(an, an2);
+	}
+	delete[] an2;
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Smoothing (" << num_smooth_pass << "): " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
 	#ifdef MODE_PI
 	for(int i = 0; i < W*H; i++)
 		if(an[i] < 0) an[i] += M_PI;
@@ -273,6 +307,8 @@ PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 }
 
 std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
+	auto time = std::chrono::high_resolution_clock::now();
+
 	double diag = std::sqrt(data->W*data->W + data->H*data->H);
 	int R = 1.93 * std::pow(diag, 0.8);
 	int T = 13.3 * std::pow(diag, 0.5);
@@ -283,7 +319,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	for(int x = 0; x < data->W; x++) {
 		for(int y = 0; y < data->H; y++) {
 			int pix = x + y*data->W;
-			if(data->no[pix] < 0.05*data->m) continue;
+			if(data->no[pix] < 0.01*data->m) continue;
 //			double alpha = int((std::atan2(y, x) + 0.5*M_PI) / t_step) * t_step;
 //			double mit = alpha - (0.3333*T + 0.5)*t_step, mat = alpha + 0.3333*T*t_step;
 			for(double tt = -0.5*M_PI + 0.5*t_step; tt < M_PI; tt += t_step) {
@@ -296,10 +332,15 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 				int ri = int(r / r_step);
 				int ti = int((tt + M_PI/2) / t_step);
 				int p = ri + ti * R;
-				res[p] += (1.0 - std::pow(std::abs(std::sin(tt - data->an[pix])), 0.5)) * (1.0 + 1.5 * data->no[pix]/data->m);
+				res[p] += (1.0 - std::pow(std::abs(std::sin(tt - data->an[pix])), 0.66)) * (1.0 + 1.5 * data->no[pix]/data->m);
 			}
 		}
 	}
+	auto time2 = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> dtime = time2 - time;
+	std::cerr << "Hough transform: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
 	std::vector<int> lines;
 	for(int i = 0; i < R*T; i++) lines.push_back(i);
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
@@ -352,5 +393,8 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 		// ls.push_back(l2);
 	}
 	delete [] res;
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Finding lines: " << dtime.count() << std::endl;
 	return ls;
 }

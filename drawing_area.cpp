@@ -85,7 +85,7 @@ void DrawingArea::resizeEvent(QResizeEvent *event) {
 	QWidget::resizeEvent(event);
 }
 
-void DrawingArea::paintEvent(QPaintEvent *event) {
+void DrawingArea::paintEvent(__attribute__((unused)) QPaintEvent *event) {
 	if(image.isNull()) return;
 	QPainter painter(this);
 	painter.drawImage(im_x, im_y, image);
@@ -220,7 +220,7 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 	/*** Add line ***/
 	} else if(plotOriginal && event->button() == Qt::RightButton) {
 		unsigned int previous_size = lines.size();
-		for(int i = 0; i < lines.size(); i++) {
+		for(int i = 0; i < (int) lines.size(); i++) {
 			if(lines[i]->get_dist(px, py) < 4) {
 				lines[i]->setGroup(-1);
 				lines[i] = lines.back();

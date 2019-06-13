@@ -1,9 +1,9 @@
 #include <cmath>
 #include <iostream>
 
-#define Xn 95.0
+#define Xn 95.047
 #define Yn 100.0
-#define Zn 108.9
+#define Zn 108.883
 
 #define Delta (6.0 / 29.0)
 const static double delta2 = std::pow(Delta, 2.0);
