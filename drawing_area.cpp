@@ -142,6 +142,10 @@ void DrawingArea::save_svg(const std::string &filename) const {
 	res << "<svg width=\"" << xmax-xmin << "\" height=\"" << ymax-ymin << "\" version=\"1.1\""
 		<< " xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
 	xmin -= 0.5, ymin -= 0.5;
+	double diag = qSqrt(qPow(xmax-xmin, 2.0) + qPow(ymax-ymin, 2.0));
+	double line_width = 1.14 + diag * 19e-5;
+	double horizon_width = 1.88 + diag * 30e-5;
+	double point_width = 2.67 + diag * 44e-5;
 	res << "\t<image xlink:href=\"" << filename0.toStdString() << "\" x=\"" << int(-xmin) << "\" y=\"" << int(-ymin) << "\""
 		<< " height=\"" << image0.height() << "\" width=\"" << image0.width() << "\" />\n";
 	for(const DLine* l : lines) {
@@ -149,17 +153,17 @@ void DrawingArea::save_svg(const std::string &filename) const {
 		QColor col = l->get_group() == 0 ? colors[0] : colors[1 + (l->get_group() - 1) % (colors.size()-1)];
 		res << "\t<line x1=\"" << int(l0.x1()-xmin) << "\" y1=\"" << int(l0.y1()-ymin) << "\""
 			<< " x2=\"" << int(l0.x2()-xmin) << "\" y2=\"" << int(l0.y2()-ymin)
-			<< "\" style=\"stroke:rgb(" << col.red() << ", " << col.green() << ", " << col.blue() << "); stroke-width:1.7\" />\n";
+			<< "\" style=\"stroke:rgb(" << col.red() << ", " << col.green() << ", " << col.blue() << "); stroke-width:" << line_width << "\" />\n";
 	}
 	if(horizontalLine != nullptr) {
 		const QLine l0 = horizontalLine->get_line0();
 		res << "\t<line x1=\"" << int(l0.x1()-xmin) << "\" y1=\"" << int(l0.y1()-ymin) << "\""
-			<< " x2=\"" << int(l0.x2()-xmin) << " y2=\"" << int(l0.y2()-ymin)
-			<< "\" style=\"stroke:rgb(0, 120, 240); stroke-width:2.8\" />\n";
+			<< " x2=\"" << int(l0.x2()-xmin) << "\" y2=\"" << int(l0.y2()-ymin)
+			<< "\" style=\"stroke:rgb(0, 120, 240); stroke-width:" << horizon_width << "\" />\n";
 	}
 	for(const DPoint &p : vanishPoints) {
 		const QPoint qp = p.get_point0();
-		res << "\t<circle cx=\"" << int(qp.x()-xmin) << "\" cy=\"" << int(qp.y()-ymin) << "\" r=\"4\" fill=\"red\" />\n";
+		res << "\t<circle cx=\"" << int(qp.x()-xmin) << "\" cy=\"" << int(qp.y()-ymin) << "\" r=\"" << point_width << "\" fill=\"red\" />\n";
 	}
 	res << "</svg>\n";
 	res.close();

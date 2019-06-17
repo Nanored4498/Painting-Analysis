@@ -91,6 +91,7 @@ void Window::open() {
 
 void Window::save() {
 	QString name = QFileDialog::getSaveFileName(this, "Save to SVG", QDir::currentPath(), "Images (*.svg)");
+	if(!name.endsWith(".svg")) name += ".svg";
 	if(!name.isEmpty()) area->save_svg(name.toStdString());
 }
 
