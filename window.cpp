@@ -16,8 +16,14 @@ Window::Window(): QMainWindow() {
 	openAct->setStatusTip("Open an image");
 	connect(openAct, SIGNAL(triggered()), this, SLOT(open()));
 
+	saveAct = new QAction("&Save", this);
+	saveAct->setShortcuts(QKeySequence::Save);
+	saveAct->setStatusTip("Save the analysis in a SVG file");
+	connect(saveAct, SIGNAL(triggered()), this, SLOT(save()));
+
 	fileMenu = menuBar()->addMenu("&File");
 	fileMenu->addAction(openAct);
+	fileMenu->addAction(saveAct);
 
 	QWidget *centralW = new QWidget();
 	QVBoxLayout *layout = new QVBoxLayout();
@@ -81,6 +87,11 @@ Window::Window(): QMainWindow() {
 void Window::open() {
 	QString name = QFileDialog::getOpenFileName(this, "Open Image", QDir::currentPath(), "Images (*.png *.jpg)");
 	if(!name.isEmpty()) area->loadImage(name);
+}
+
+void Window::save() {
+	QString name = QFileDialog::getSaveFileName(this, "Save to SVG", QDir::currentPath(), "Images (*.svg)");
+	if(!name.isEmpty()) area->save_svg(name.toStdString());
 }
 
 void Window::disableButs() {

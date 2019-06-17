@@ -63,7 +63,8 @@ public:
 	void select() { selected = !selected; }
 	void setGroup(int g) { group = g; }
 
-	QLine get_line() const { return l; }
+	const QLine get_line() const { return l; }
+	const QLine get_line0() const { return l0; }
 	bool is_selected() const { return selected; }
 	int get_group() const { return group; }
 	inline void getCSR(double &c, double &s, double &r) const { c = co, s = si, r = li.rho; }

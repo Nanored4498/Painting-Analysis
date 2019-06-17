@@ -1,8 +1,8 @@
 #include <drawing_elements.h>
 
 DLine::DLine(const PA::Line &li, int W, int H): li(li) {
-	W *= 10;
-	H *= 10;
+	W *= 6;
+	H *= 6;
 	int x0, y0, x1, y1;
 	double y = li.b - W * li.a;
 	if(y > H) x0 = -W + (H - y) / li.a, y0 = H;

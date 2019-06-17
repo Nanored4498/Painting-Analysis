@@ -17,14 +17,18 @@ public:
 	~Window();
 
 public slots:
-	void open();
 	void enableGetLine();
 	void shiftSelection(int a);
 	void disableButs();
+	
+protected slots:
+	void open();
+	void save();
 
 private:
 	QMenu *fileMenu;
 	QAction *openAct;
+	QAction *saveAct;
 
 	DrawingArea *area;
 

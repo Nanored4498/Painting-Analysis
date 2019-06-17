@@ -224,7 +224,8 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
 	std::cerr << "Sobel filter: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
-	clean(no, W, H, 0.0067*sigma_col*m, 0.06*diag);
+	clean(no, W, H, 0.0067*sigma_col*m, 0.075*diag);
+	// clean(no, W, H, 0.0045*sigma_col*m, 0.03*diag);
 	time2 = std::chrono::high_resolution_clock::now();
 	dtime = time2 - time;
 	std::cerr << "Cleaning: " << dtime.count() << std::endl;
@@ -311,7 +312,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 
 	double W = data->W, H = data->H;
 	double diag = std::sqrt(W*W + H*H);
-	int R = 1.93 * std::pow(diag, 0.8);
+	int R = 1.96 * std::pow(diag, 0.8);
 	int T = 13.3 * std::pow(diag, 0.5);
 	double *res = new double[R*T];
 	for(int i = 0; i < R*T; i++) res[i] = 0;

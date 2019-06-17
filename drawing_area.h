@@ -24,6 +24,7 @@ public:
 	DrawingArea(QWidget *parent = nullptr);
 
 	bool loadImage(const QString &fileName);
+	void save_svg(const std::string &filename) const;
 
 signals:
 	void reinitialized();
@@ -54,6 +55,9 @@ private:
 	void eraseSobel(double px, double py);
 	void computeHorizon();
 
+	static const std::vector<QColor> colors;
+
+	QString filename0;
 	QImage image, image0;
 	uchar* im = nullptr;
 	double scale, sx, sy;
