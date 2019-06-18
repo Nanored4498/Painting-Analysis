@@ -10,7 +10,7 @@
 #include <drawing_elements.h>
 
 #define NBLINES0 20
-#define RBRUSH0 8
+#define RBRUSH0 10
 
 #define UNSELECTED 0
 #define VANISH_POINT 1

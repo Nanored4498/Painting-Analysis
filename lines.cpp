@@ -331,10 +331,17 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 				double c = std::cos(tt), s = std::sin(tt);
 				double r = x*c + y*s;
 				if(r < 0) continue;
+				double val = (1.0 - std::pow(diff_angle, 0.66)) * (1.0 + 1.5 * data->no[pix]/data->m);
 				int ri = int(r / r_step);
-				int ti = int((tt + M_PI/2) / t_step);
-				int p = ri + ti * R;
-				res[p] += (1.0 - std::pow(diff_angle, 0.66)) * (1.0 + 1.5 * data->no[pix]/data->m);
+				double dr = (r - ri * r_step) / r_step;
+				int ti = int((tt + M_PI/2.0) / t_step);
+				if(dr > 0.5) {
+					res[ri + ti * R] += (1.5 - dr) * val;
+					if(ri+1 < R) res[ri+1 + ti * R] += (dr - 0.5) * val;
+				} else {
+					res[ri + ti * R] += (0.5 + dr) * val;
+					if(ri-1 >= 0) res[ri-1 + ti * R] += (0.5 - dr) * val;
+				}
 			}
 		}
 	}
@@ -350,11 +357,33 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	unsigned int i = 0;
 	while(ls.size() < 200 && i < lines.size()) {
 		bool add = true;
-		int x = lines[i] % R;
-		int y = lines[i] / R;
+		int ind = lines[i];
+		int ri = ind % R;
+		int ti = ind / R;
+		double min_neig = res[ind];
+		double r_unw_sum = 0, t_unw_sum = 0;
+		double r_w_sum = 0, t_w_sum = 0;
+		double w = 0;
+		double n = 0;
+		for(int r2 = -1; r2 <= 1; r2 ++) {
+			for(int t2 = -1; t2 <= 1; t2 ++) {
+				int rb = ri+r2, tb = ti+t2;
+				if(0 <= rb && rb < R && 0 <= tb && tb < T) {
+					double val = res[rb + tb*R];
+					min_neig = std::min(min_neig, val);
+					r_unw_sum += r2, t_unw_sum += t2;
+					r_w_sum += val*r2, t_w_sum += val*t2;
+					w += val;
+					n ++;
+				}
+			}
+		}
+		w -= n*min_neig;
+		double r_add = (r_w_sum - r_unw_sum*min_neig) / w;
+		double t_add = (t_w_sum - t_unw_sum*min_neig) / w;
 		i++;
-		double r = (x + 0.5) * r_step;
-		double t = (y + 0.5) * t_step - M_PI/2;
+		double r = (ri + r_add + 0.5) * r_step;
+		double t = (ti + t_add + 0.5) * t_step - M_PI/2;
 		double c = std::cos(t), s = std::sin(t);
 		double x0 = 0, y0 = r/s, x1 = W, y1 = (r - c*W)/s;
 		if(y0 > H) x0 = (r - s*H)/c, y0 = H;

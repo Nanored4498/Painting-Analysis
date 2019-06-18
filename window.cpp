@@ -79,7 +79,7 @@ Window::Window(): QMainWindow() {
 	sliLayout->addWidget(nLinesSli);
 	connect(nLinesSli, SIGNAL(valueChanged(int)), area, SLOT(changeNbLines(int)));
 
-	rBrushSli = new LabeledSlider("Brush radius", 2, 30, RBRUSH0);
+	rBrushSli = new LabeledSlider("Brush radius", 6, 35, RBRUSH0);
 	sliLayout->addWidget(rBrushSli);
 	connect(rBrushSli, SIGNAL(valueChanged(int)), area, SLOT(changeRBrush(int)));
 }
