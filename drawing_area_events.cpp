@@ -41,9 +41,7 @@ void DrawingArea::wheelEvent(QWheelEvent *event) {
 	newScale = qMin(15.0, qMax(1.0, newScale));
 	double px = event->pos().x();
 	double py = event->pos().y();
-	double dx = (width() - image.width()) / 2.0;
-	double dy = (height() - image.height()) / 2.0;
-	if(px < dx || px >= width()-dx || py < dy || py >= height()-dy) return;
+	if(px < im_x || px >= im_x+image.width() || py < im_y || py >= im_y+image.height()) return;
 	px -= (width() - scale_im*image0.width()) / 2.0;
 	py -= (height() - scale_im*image0.height()) / 2.0;
 	double s = (1 - scale/newScale) / scale_im / scale;
@@ -58,7 +56,7 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 	if(image0.isNull()) return;
 	double px = event->pos().x();
 	double py = event->pos().y();
-	/*** Select a liene ***/
+	/*** Select a line ***/
 	if(event->button() == Qt::LeftButton) {
 		// If shift is not pressed, unselect all elements already selected
 		if(!(QApplication::keyboardModifiers() & Qt::ShiftModifier)) {
@@ -139,9 +137,7 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		}
 	/*** Brush or move camera ***/
 	} else if(event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) {
-		double dx = (width() - image.width()) / 2.0;
-		double dy = (height() - image.height()) / 2.0;
-		if(px < dx || px >= width()-dx || py < dy || py >= height()-dy) return;
+		if(px < im_x || px >= im_x+image.width() || py < im_y || py >= im_y+image.height()) return;
 		px -= (width() - scale_im*image0.width()) / 2;
 		py -= (height() - scale_im*image0.height()) / 2;
 		MidButPressed = event->button() == Qt::MiddleButton;

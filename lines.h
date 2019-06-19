@@ -15,6 +15,10 @@ struct Line {
 	double a, b, rho, theta;
 
 	Line(double x, double y, bool hough=false) {
+		set(x, y, hough);
+	}
+
+	void set(double x, double y, bool hough=false) {
 		if(hough) {
 			rho = x;
 			theta = y;

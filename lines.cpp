@@ -354,7 +354,9 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	for(int i = 0; i < R*T; i++) lines.push_back(i);
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
 	std::vector<PA::Line> ls;
+	std::vector<int> indices;
 	unsigned int i = 0;
+	double lim_dist = 0.01 * diag;
 	while(ls.size() < 200 && i < lines.size()) {
 		bool add = true;
 		int ind = lines[i];
@@ -390,19 +392,27 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 		else if(y0 < 0) x0 = r/c, y0 = 0;
 		if(y1 > H) x1 = (r - s*H)/c, y1 = H;
 		else if(y1 < 0) x1 = r/c, y1 = 0;
+		std::vector<int>::iterator ind_it = indices.begin();
 		for(PA::Line &l : ls) {
 			double co = std::cos(l.theta), si = std::sin(l.theta);
 			double d0 = co * x0 + si * y0 - l.rho;
 			double d1 = co * x1 + si * y1 - l.rho;
 			bool cross = (d0 < 0) != (d1 < 0);
 			double dm = cross ? (d0*d0 + d1*d1) / 2.0 / std::abs(d0 - d1) : std::abs(d0 + d1) / 2.0;
-			if(dm < 0.01 * diag) {
+			if(dm < lim_dist) {
 				add = false;
+				if(dm > 0.3*lim_dist) break;
+				double alpha = (0.67 - dm / 0.45 / lim_dist) * res[ind] / (res[ind] + res[*ind_it]);
+				res[*ind_it] += res[ind];
+				l.set((1 - alpha) * l.rho + alpha * r, (1 - alpha) * l.theta + alpha * t, true);
+				std::cout << alpha << std::endl;
 				break;
 			}
+			ind_it ++;
 		}
 		if(!add) continue;
 		ls.emplace_back(r, t, true);
+		indices.push_back(ind);
 
 		// double max_d = 0.008 * diag;
 		// double co = std::cos(t), si = std::sin(t);
