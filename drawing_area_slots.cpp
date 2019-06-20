@@ -88,6 +88,7 @@ void DrawingArea::selectionAction() {
 			if(l->is_selected()) l->setGroup(g);
 		vanishPoints[vanishPoints.size()-1].setGroup(g);
 		vanishPoints[vanishPoints.size()-1].select();
+		emit selected(UNGROUP);
 
 	} else if(action == INTERSECTIONS) {
 

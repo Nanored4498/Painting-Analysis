@@ -90,11 +90,12 @@ double sobel(Color* im, double* &norm, double* &angle, int W, int H, bool *mask=
 }
 
 const double Mss[3][3] = {{0.0925, 0.12, 0.0925}, {0.12, 0.15, 0.12}, {0.0925, 0.12, 0.0925}};
-void smooth_sep(double* norm, double* angle, int W, int H, double* res) {
+void smooth_sep(double* norm, double* angle, int W, int H, double* res, double m) {
 	#pragma omp parallel for
 	for(int i = 0; i < W; i++) {
 		for(int j = 0; j < H; j++) {
 			int pix = i + j*W;
+			if(norm[pix] < 0.005*m) continue;
 			if(i == 0 || i == W-1 || j == 0 || j == H-1) {
 				res[pix] = angle[pix];
 				continue;
@@ -103,6 +104,7 @@ void smooth_sep(double* norm, double* angle, int W, int H, double* res) {
 			for(int a = 0; a < 3; a++) {
 				for(int b = 0; b < 3; b++) {
 					int p2 = (i+a-1) + (j+b-1)*W;
+					if(norm[p2] < 0.005*m) continue;
 					#ifdef MODE_PI
 					co += Mss[a][b] * norm[p2] * std::cos(2.0*angle[p2]);
 					si += Mss[a][b] * norm[p2] * std::sin(2.0*angle[p2]);
@@ -127,8 +129,7 @@ uint pixelColori(int i, PA::ProblemData *data) {
 	t += 0.5;
 	#endif
 	double n = data->no[i] * 255.0 / data->m;
-	if(n < 5) n = 0;
-	else n = 200 * std::pow(n / 255.0, 0.33) + 55;
+	if(n > 0) n = 200 * std::pow(n / 255.0, 0.33) + 55;
 	uint res = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-1))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-2))*n;
@@ -183,7 +184,10 @@ void clean(double *n, int W, int H, double threshold, unsigned int min_size) {
 	for(int i = 1; i < W-1; i++) {
 		for(int j = 1; j < H; j++) {
 			int pix = i + j*W;
-			if(n[pix] < threshold) continue;
+			if(n[pix] < threshold) {
+				continue;
+				n[pix] = 0;
+			}
 			for(int k = 0; k < 4; k++) {
 				int p2 = pix+pred[k];
 				if(n[p2] >= threshold) u.merge(pix, p2);
@@ -215,17 +219,17 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask) {
 	std::cerr << "Bilateral filter: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
-	for(int i = 0; i < W*H; i++) {
-		if(mask == nullptr || mask[i]) {
-			Color col = lab_to_rgb(im2[i]);
-			for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
-		} else for(int c = 0; c < 3; c++) im[3*i+c] = 0;
-	}
-	stbi_write_png("bilateral.png", W, H, 3, im, 0);
-	time2 = std::chrono::high_resolution_clock::now();
-	dtime = time2 - time;
-	std::cerr << "Lab to RGB and saving: " << dtime.count() << std::endl;
-	time = std::chrono::high_resolution_clock::now();
+	// for(int i = 0; i < W*H; i++) {
+	// 	if(mask == nullptr || mask[i]) {
+	// 		Color col = lab_to_rgb(im2[i]);
+	// 		for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
+	// 	}
+	// }
+	// stbi_write_png("bilateral.png", W, H, 3, im, 0);
+	// time2 = std::chrono::high_resolution_clock::now();
+	// dtime = time2 - time;
+	// std::cerr << "Lab to RGB and saving: " << dtime.count() << std::endl;
+	// time = std::chrono::high_resolution_clock::now();
 
 	int num_smooth_pass = 0.06 * std::pow(diag, 0.6);
 	double *no, *an;
@@ -244,7 +248,7 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask) {
 
 	double *an2 = new double[W*H];
 	for(int i = 0; i < num_smooth_pass; i++) {
-		smooth_sep(no, an, W, H, an2);
+		smooth_sep(no, an, W, H, an2, m);
 		std::swap(an, an2);
 	}
 	delete[] an2;
@@ -332,7 +336,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 	for(int x = 0; x < W; x++) {
 		for(int y = 0; y < H; y++) {
 			int pix = x + y*W;
-			if(data->no[pix] < 0.01*data->m) continue;
+			if(data->no[pix] < 0.005*data->m) continue;
 			double ttm = std::atan2(y, x);
 			double tt0 = -0.5*M_PI + (std::floor(ttm / t_step) + 0.5) * t_step;
 			double tt1 = ttm + 0.5*M_PI;
