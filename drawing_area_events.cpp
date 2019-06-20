@@ -16,6 +16,15 @@ void DrawingArea::paintEvent(__attribute__((unused)) QPaintEvent *event) {
 	QPainter painter(this);
 	painter.drawImage(im_x, im_y, image);
 	double size_mul = qPow(scale, 0.3);
+	/*** Sobel zone ***/
+	if(pa_data == nullptr) {
+		painter.setPen(QPen(Qt::white, 1.2*size_mul));
+		for(int i = 1; i < int(zonePoints.size()); i++)
+			painter.drawLine(zonePoints[i-1].get_point(), zonePoints[i].get_point());
+		if(zonePoints.size() >= 2)
+			painter.drawLine(zonePoints[0].get_point(), zonePoints.back().get_point());
+	}
+	/*** Parallel lines ***/
 	QPen selCol(Qt::cyan, 1.5*size_mul);
 	for(const DLine *l : lines) {
 		if(l->is_selected()) painter.setPen(selCol);
@@ -107,8 +116,18 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		else action = UNGROUP;
 		emit selected(action);
 		update();
-	/*** Add line ***/
+	/*** Add line or select Sobel zone ***/
 	} else if(plotOriginal && event->button() == Qt::RightButton) {
+		double s = scale * scale_im;
+		/*** Select Soble Zone ***/
+		if(pa_data == nullptr) {
+			double dx = (width() - scale_im*image0.width())/2.0 , dy = (height() - scale_im*image0.height())/2.0;
+			zonePoints.emplace_back(sx + (px - dx) / s, sy + (py - dy) / s);
+			resizeLines();
+			update();
+			return;
+		}
+		/*** Add line ****/
 		unsigned int previous_size = lines.size();
 		for(int i = 0; i < (int) lines.size(); i++) {
 			if(lines[i]->get_dist(px, py) < 4) {
@@ -122,7 +141,6 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 			update();
 			return;
 		}
-		double s = scale * scale_im;
 		QPoint dp((width() - scale_im*image0.width())/2.0, (height() - scale_im*image0.height())/2.0);
 		QPoint sp(sx, sy);
 		for(DLine &l : candidate_lines) {

@@ -48,7 +48,7 @@ struct ProblemData {
 	}
 };
 
-ProblemData* applySobel(uchar* im, int W, int H);
+ProblemData* applySobel(uchar* im, int W, int H, bool *mask=nullptr);
 uint pixelColor(int x, int y, PA::ProblemData *data);
 void save_sobel(const char *filename, PA::ProblemData *data);
 std::vector<Line> get_lines(ProblemData *data);

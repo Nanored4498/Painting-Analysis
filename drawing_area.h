@@ -49,6 +49,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent *eventMove) override;
 
 private:
+	void clamp_sxy();
 	void resize();
 	void resizeLines();
 	void shiftSobelPixel(int x, int y, bool unbrush=false);
@@ -63,7 +64,8 @@ private:
 	double scale, sx, sy;
 	int im_x, im_y;
 	double scale_im;
-	void clamp_sxy();
+
+	std::vector<DPoint> zonePoints;
 
 	PA::ProblemData *pa_data = nullptr;
 	QImage sobelIm;

@@ -31,6 +31,7 @@ bool DrawingArea::loadImage(const QString &fileName) {
 		delete pa_data;
 		pa_data = nullptr;
 	}
+	zonePoints.clear();
 	candidate_lines.clear();
 	lines.clear();
 	vanishPoints.clear();
@@ -48,6 +49,7 @@ void DrawingArea::resizeLines() {
 	double s = scale * scale_im;
 	QPoint dp((width() - scale_im*image0.width())/2, (height() - scale_im*image0.height())/2);
 	QPoint sp(sx, sy);
+	for(DPoint &p : zonePoints) p.update(s, sp, dp);
 	for(DLine *l : lines) l->update(s, sp, dp);
 	for(DPoint &p : vanishPoints) p.update(s, sp, dp);
 	if(horizontalLine) horizontalLine->update(s, sp, dp);

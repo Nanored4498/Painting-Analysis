@@ -20,14 +20,41 @@ void DrawingArea::findLines() {
 	update();
 }
 
+bool pred_inside(double x, double y, const DPoint &p0, const DPoint &p1) {
+	const QPoint &q0 = p0.get_point0();
+	const QPoint &q1 = p1.get_point0();
+	if((q0.y() > y) == (q1.y() > y)) return false;
+	double qx = q0.x() + (q1.x() - q0.x()) * (y - q0.y()) / double(q1.y() - q0.y());
+	return qx <= x;
+}
+
 void DrawingArea::computeSobel() {
 	if(!im) return;
+	// Cleaning
 	if(pa_data) delete pa_data;
 	candidate_lines.clear();
 	lines.clear();
 	vanishPoints.clear();
+	// Computing mask
 	int W = image0.width(), H = image0.height();
-	pa_data = PA::applySobel(im, W, H);
+	bool *mask = new bool[W*H];
+	#pragma omp parallel for
+	for(int x = 0; x < W; x++) {
+		for(int y = 0; y < H; y++) {
+			int pix = x + y*W;
+			if(zonePoints.size() < 3) {
+				mask[pix] = true;
+				continue;
+			}
+			int i = 0;
+			for(int pi = 1; pi < int(zonePoints.size()); pi ++)
+				if(pred_inside(x, y, zonePoints[pi-1], zonePoints[pi])) i ++;
+			if(pred_inside(x, y, zonePoints[0], zonePoints.back())) i ++;
+			mask[pix] = (i % 2) == 1;
+		}
+	}
+	// Computing Sobel
+	pa_data = PA::applySobel(im, W, H, mask);
 	PA::save_sobel("sobel.png", pa_data);
 	sobelIm.load("sobel.png");
 	emit sobelComputed();
@@ -108,8 +135,7 @@ void DrawingArea::selectionAction() {
 					std::vector<PDD> ps;
 					for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
 						PDD p = vvp[a][s-a];
-						if(p.first >= 0 && p.first < W && p.second >= 0 && p.second < H)
-							ps.push_back(p);
+						ps.push_back(p);
 					}
 					if(ps.size() > 1){
 						DLine l = pca_pdd(ps, W, H);
@@ -120,8 +146,7 @@ void DrawingArea::selectionAction() {
 					ps.clear();
 					for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
 						PDD p = vvp[n-1-a][s-a];
-						if(p.first >= 0 && p.first < W && p.second >= 0 && p.second < H)
-							ps.push_back(p);
+						ps.push_back(p);
 					}
 					if(ps.size() > 1) {
 						DLine l = pca_pdd(ps, W, H);
@@ -145,6 +170,7 @@ void DrawingArea::selectionAction() {
 				break;
 			}
 		}
+		emit selected(VANISH_POINT);
 	}
 	computeHorizon();
 	resizeLines();

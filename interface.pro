@@ -30,3 +30,7 @@ QMAKE_CXXFLAGS += \
 
 LIBS += \
 	-fopenmp
+
+CONFIG(release, debug|release) {
+    CONFIG += optimize_full
+}

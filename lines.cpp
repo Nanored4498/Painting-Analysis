@@ -13,17 +13,21 @@
 #define CYCLE (2*M_PI)
 #endif
 
-void bilateral(Color* in, Color* out, int size, double sigma_col, double sigma_dis, int W, int H) {
+void bilateral(Color* in, Color* out, int size, double sigma_col, double sigma_dis, int W, int H, bool *mask=nullptr) {
 	sigma_col *= sigma_col;
 	sigma_dis *= sigma_dis;
 	#pragma omp parallel for
 	for(int i = 0; i < W; i++) {
 		for(int j = 0; j < H; j++) {
+			int pix = i + W*j;
+			Color new_col(0, 0, 0);
+			if(mask != nullptr && !mask[pix]) {
+				out[pix] = new_col;
+				continue;
+			}
 			int miX = std::max(0, i - size), maX = std::min(W-1, i + size);
 			int miY = std::max(0, j - size), maY = std::min(H-1, j + size);
-			int pix = i + W*j;
 			double w = 0;
-			Color new_col(0, 0, 0);
 			for(int x = miX; x <= maX; x ++) {
 				for(int y = miY; y <= maY; y++) {
 					double dc2 = 0;
@@ -43,7 +47,7 @@ void bilateral(Color* in, Color* out, int size, double sigma_col, double sigma_d
 	}
 }
 
-double sobel(Color* im, double* &norm, double* &angle, int W, int H) {
+double sobel(Color* im, double* &norm, double* &angle, int W, int H, bool *mask=nullptr) {
 	norm = new double[W*H];
 	angle = new double[W*H];
 	for(int i = 0; i < W; i++)
@@ -54,9 +58,13 @@ double sobel(Color* im, double* &norm, double* &angle, int W, int H) {
 	#pragma omp parallel for reduction(max: max_no)
 	for(int x = 1; x < W-1; x++) {
 		for(int y = 1; y < H-1; y++) {
+			int pix = x + y*W;
+			if(mask != nullptr && !mask[pix]) {
+				norm[pix] = angle[pix] = 0;
+				continue;
+			}
 			double no = 0;
 			double co = 0, si = 0;
-			int pix = x + y*W;
 			Color cax = 3 * im[pix+1+W] + 10 * im[pix+1] + 3 * im[pix+1-W]
 						- 3 * im[pix-1+W] - 10 * im[pix-1] - 3 * im[pix-1-W];
 			Color cay = 3 * im[pix+1+W] + 10 * im[pix+W] + 3 * im[pix-1+W]
@@ -74,8 +82,8 @@ double sobel(Color* im, double* &norm, double* &angle, int W, int H) {
 			}
 			no = std::sqrt(no);
 			max_no = std::max(max_no, no);
-			norm[x+y*W] = no;
-			angle[x+y*W] = std::atan2(si, co);
+			norm[pix] = no;
+			angle[pix] = std::atan2(si, co);
 		}
 	}
 	return max_no;
@@ -186,7 +194,7 @@ void clean(double *n, int W, int H, double threshold, unsigned int min_size) {
 		if(u.w[u.find(i)] < min_size) n[i] = 0;
 }
 
-PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
+PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask) {
 	double diag = std::sqrt(W*W + H*H);
 	double sigma = std::pow(diag, 0.3) * 0.3;
 	double sigma_col = 250.0 / pow(diag, 0.4);
@@ -194,21 +202,24 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
 	
 	Color *im2 = new Color[W*H];
 	for(int i = 0; i < W*H; i++)
-		im2[i] = rgb_to_lab(Color(im[3*i], im[3*i+1], im[3*i+2]));
+		if(mask == nullptr || mask[i]) im2[i] = rgb_to_lab(Color(im[3*i], im[3*i+1], im[3*i+2]));
+		else im2[i] = Color(0, 0, 0);
 	auto time2 = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> dtime = time2 - time;
 	std::cerr << "RGB to Lab: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
-	bilateral(im2, im2, sigma+0.5, sigma_col, sigma, W, H);
+	bilateral(im2, im2, sigma+0.5, sigma_col, sigma, W, H, mask);
 	time2 = std::chrono::high_resolution_clock::now();
 	dtime = time2 - time;
 	std::cerr << "Bilateral filter: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
 	for(int i = 0; i < W*H; i++) {
-		Color col = lab_to_rgb(im2[i]);
-		for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
+		if(mask == nullptr || mask[i]) {
+			Color col = lab_to_rgb(im2[i]);
+			for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
+		} else for(int c = 0; c < 3; c++) im[3*i+c] = 0;
 	}
 	stbi_write_png("bilateral.png", W, H, 3, im, 0);
 	time2 = std::chrono::high_resolution_clock::now();
@@ -218,7 +229,7 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H) {
 
 	int num_smooth_pass = 0.06 * std::pow(diag, 0.6);
 	double *no, *an;
-	double m = sobel(im2, no, an, W, H);
+	double m = sobel(im2, no, an, W, H, mask);
 	time2 = std::chrono::high_resolution_clock::now();
 	dtime = time2 - time;
 	std::cerr << "Sobel filter: " << dtime.count() << std::endl;
@@ -401,11 +412,10 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 			double dm = cross ? (d0*d0 + d1*d1) / 2.0 / std::abs(d0 - d1) : std::abs(d0 + d1) / 2.0;
 			if(dm < lim_dist) {
 				add = false;
-				if(dm > 0.3*lim_dist) break;
-				double alpha = (0.67 - dm / 0.45 / lim_dist) * res[ind] / (res[ind] + res[*ind_it]);
+				if(dm > 0.4*lim_dist) break;
+				double alpha = (0.67 - dm / 0.6 / lim_dist) * res[ind] / (res[ind] + res[*ind_it]);
 				res[*ind_it] += res[ind];
 				l.set((1 - alpha) * l.rho + alpha * r, (1 - alpha) * l.theta + alpha * t, true);
-				std::cout << alpha << std::endl;
 				break;
 			}
 			ind_it ++;
