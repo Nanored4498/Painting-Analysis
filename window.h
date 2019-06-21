@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QComboBox>
 #include <QLabel>
+#include <QKeyEvent>
 
 #include <drawing_area.h>
 #include <labeled_slider.h>
@@ -24,6 +25,9 @@ public slots:
 protected slots:
 	void open();
 	void save();
+
+protected:
+	void keyPressEvent(QKeyEvent *event);
 
 private:
 	QMenu *fileMenu;

@@ -120,6 +120,18 @@ void Window::shiftSelection(int a) {
 	else if(a == UNGROUP) selectionBut->setText("Ungroup");
 }
 
+void Window::keyPressEvent(QKeyEvent *event) {
+	switch(event->key()) {
+	case Qt::Key_Tab:
+		plotedImageBut->setCurrentIndex(1 - plotedImageBut->currentIndex());
+		break;
+	
+	default:
+		break;
+	}
+	QMainWindow::keyPressEvent(event);
+}
+
 Window::~Window() {
 	delete fileMenu;
 	delete openAct;

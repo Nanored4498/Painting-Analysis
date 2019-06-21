@@ -57,6 +57,14 @@ void DrawingArea::computeSobel() {
 	pa_data = PA::applySobel(im, W, H, mask);
 	PA::save_sobel("sobel.png", pa_data);
 	sobelIm.load("sobel.png");
+	for(int x = 0; x < W; x++) {
+		for(int y = 0; y < H; y++) {
+			if((sobelIm.pixel(x, y) & 0xffffff) == 0) {
+				QColor col = image0.pixelColor(x, y);
+				sobelIm.setPixelColor(x, y, QColor(qMin(63, col.red()/4), qMin(63, col.green()/4), qMin(63, col.blue()/4)));
+			}
+		}
+	}
 	emit sobelComputed();
 }
 

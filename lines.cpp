@@ -129,7 +129,7 @@ uint pixelColori(int i, PA::ProblemData *data) {
 	t += 0.5;
 	#endif
 	double n = data->no[i] * 255.0 / data->m;
-	if(n > 0) n = 200 * std::pow(n / 255.0, 0.33) + 55;
+	if(n > 0) n = 191 * std::pow(n / 255.0, 0.4) + 64;
 	uint res = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-1))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-2))*n;
