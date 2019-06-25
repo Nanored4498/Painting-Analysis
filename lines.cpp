@@ -205,6 +205,7 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask) {
 	auto time = std::chrono::high_resolution_clock::now();
 	
 	Color *im2 = new Color[W*H];
+	#pragma omp parallel for
 	for(int i = 0; i < W*H; i++)
 		if(mask == nullptr || mask[i]) im2[i] = rgb_to_lab(Color(im[3*i], im[3*i+1], im[3*i+2]));
 		else im2[i] = Color(0, 0, 0);
