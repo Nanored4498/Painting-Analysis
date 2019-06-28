@@ -4,3 +4,7 @@ build*
 *.png
 test
 ims
+*.aux
+*.pdf
+*.log
+*.gz

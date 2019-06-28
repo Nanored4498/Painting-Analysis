@@ -129,21 +129,39 @@ def main():
 	pl.xlim(0, W)
 	pl.ylim(H, 0)
 
+	################################################
+	# Importance of the vanish points of depth lines
+	center_coeff = 5
+	# Importance of the horizontal lines on the ground
+	# to readjust the horizon lines
+	horizon_coeff = 2
+	################################################
+	
+	# Computing the mean of horizontal lines coefficient
+	for g in groups:
+		if g not in dots:
+			gh = g
+			ma = sum(l._a for l in groups[g]) / len(groups[g])
+
 	# Recompute vanishing points
 	gs = sorted(dots.keys(), key=lambda g: dots[g][0])
 	dx = 0.5 * (dots[gs[2]][0] - dots[gs[0]][0])
-	a = (dots[gs[0]][0] + dots[gs[1]][0] + dots[gs[2]][0]) / 3.0 - dx
+	a = (dots[gs[0]][0] + center_coeff * dots[gs[1]][0] + dots[gs[2]][0]) / (2 + center_coeff) - dx
 	dy = 0.5 * (dots[gs[2]][1] - dots[gs[0]][1])
-	b = (dots[gs[0]][1] + dots[gs[1]][1] + dots[gs[2]][1]) / 3.0 - dy
+	dy = (dy + horizon_coeff * ma * dx) / (1 + horizon_coeff)
+	b = (dots[gs[0]][1] + center_coeff * dots[gs[1]][1] + dots[gs[2]][1]) / (2 + center_coeff) - dy
 	dots2 = {gs[i] : (a+i*dx, b+i*dy) for i in range(3)}
-	horizon2 = Line(a, b, a+dx, b+dy)
+	horizon2 = Line(a-3*dx, b-3*dy, a+3*dx, b+3*dy, horizon._col)
+	horizon2.plot()
 	bottom = horizon2.translate(0, H - 0.5 * (horizon2.y(im_x) + horizon2.y(im_x+im_w)))
 
 	# Recompute parallel lines
 	datas = {}
+	groups2 = {}
 	dx, dy = 0, 0
 	for g in dots2:
 		x, y = dots2[g]
+		pl.scatter(x, y)
 		im_bot = im_y+im_h
 		xls = [l.x(im_bot) for l in groups[g]]
 		x0, x1 = min(xls), max(xls)
@@ -152,15 +170,15 @@ def main():
 		nls = len(xls)
 		col = groups[g][0]._col
 		a, b = p0
-		dx += (p1[0] - p0[0]) / (nls-1) / 3.0
-		dy += (p1[1] - p0[1]) / (nls-1) / 3.0
+		dx += (p1[0] - p0[0]) / (nls-1) * (1 if g != gs[1] else center_coeff) / (2 + center_coeff)
+		dy += (p1[1] - p0[1]) / (nls-1) * (1 if g != gs[1] else center_coeff) / (2 + center_coeff)
 		datas[g] = x, y, a, b, col, nls
 	d0c, d0s = 0, 0
 	for g in datas:
 		a = datas[g][2]
 		da = (a - int(a / dx) * dx) / dx * 2 * np.pi
-		d0c += np.math.cos(da)
-		d0s += np.math.sin(da)
+		d0c += np.math.cos(da) * (1 if g != gs[1] else center_coeff)
+		d0s += np.math.sin(da) * (1 if g != gs[1] else center_coeff)
 	t0 = np.math.atan2(d0s, d0c)
 	if t0 < 0 : t0 += 2 * np.pi
 	d0 = t0 * dx / (2 * np.pi)
@@ -171,9 +189,18 @@ def main():
 		elif 2*(d0 - da) > dx: da += dx
 		a += d0 - da
 		b += (d0 - da) * dy / dx
+		groups2[g] = []
 		for i in range(nls):
 			l = Line(x, y, a + i * dx, b + i * dy, col)
+			groups2[g].append(l)
 			l.plot()
+
+	for l in groups2[gs[2]]:
+		x, y = l.inter(groups2[gs[0]][0])
+		l2 = Line(x-20*dx, y-20*dy, x+20*dx, y+20*dy, groups[gh][0]._col)
+		l2.plot()
+
+	# Show figures
 	pl.show()
 
 if __name__ == "__main__":
