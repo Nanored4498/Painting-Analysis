@@ -56,6 +56,7 @@ def main():
 	parser = argparse.ArgumentParser(description='Redraw the perspective lines of a SVG correctly')
 	parser.add_argument('filename', type=str,
 						help='The path to the SVG file to redraw')
+	parser.add_argument()
 	args = parser.parse_args()
 
 	# Opening the file
@@ -240,33 +241,75 @@ def main():
 
 	# Recompute the new horizon and the bottom line
 	dx, dy = xs[2] - xs[0], ys[2] - ys[0]
-	horizon2 = Line(xs[0]-dx, ys[0]-dx, xs[2]+dx, ys[2]+dx, horizon._col)
+	horizon2 = Line(xs[0]-dx, ys[0]-dy, xs[2]+dx, ys[2]+dy, horizon._col)
+	horizon2.plot()
 	nd = (dx**2 + dy**2) ** 0.5
 	dx /= nd
 	dy /= nd
-	print(dx, dy)
 	y_translation = d_translation / dx
 	bottom = horizon2.translate(0, y_translation)
 
-	for i in range(3):
-		g = gs[i]
-		col = groups[g][0]._col
-		x, y = xs[i], ys[i]
-		px, py = p1s[i]
-		apx, apy = px - x, py - y
-		t = d_translation / (dx*apy - dy*apx)
-		px, py = x + apx*t, y + apy*t
-		d = ds[i]
-		for _ in range(nls[i]):
-			l = Line(x, y, px, py, col)
-			l.plot()
-			px += dx * d
-			py += dy * d
+	# Function to compute the new perspective lines with a translation
+	# for each group contains in add_d
+	groups2 = {}
+	def compute_new_lines(add_d):
+		for i in range(3):
+			g = gs[i]
+			col = groups[g][0]._col
+			x, y = xs[i], ys[i]
+			px, py = p1s[i]
+			apx, apy = px - x, py - y
+			t = d_translation / (dx*apy - dy*apx)
+			px, py = x + apx*t + dx * add_d[i], y + apy*t + dy * add_d[i]
+			d = ds[i]
+			groups2[g] = []
+			for _ in range(nls[i]):
+				l = Line(x, y, x + 2*(px-x), y + 2*(py-y), col)
+				groups2[g].append(l)
+				px += dx * d
+				py += dy * d
 
-	# for l in groups2[gs[2]]:
-	# 	x, y = l.inter(groups2[gs[0]][0])
-	# 	l2 = Line(x-20*dx, y-20*dy, x+20*dx, y+20*dy, groups[gh][0]._col)
-	# 	l2.plot()
+	# Compute correct translation of each group to obtain intersections
+	# of lines comming from the three groups
+	compute_new_lines([0, 0, 0])
+	lins = None
+	bd = float('inf')
+	for l0 in groups2[gs[0]]:
+		for l1 in groups2[gs[1]]:
+			for l2 in groups2[gs[2]]:
+				i0, i2 = l1.inter(l0), l1.inter(l2)
+				dis = (i0[0]-i2[0])**2 + (i0[1]-i2[1])**2
+				if dis < bd: lins, bd = (l0, l1, l2), dis
+	add_d = []
+	for i in range(3):
+		pl.scatter(xs[i], ys[i])
+		l = lins[i]
+		ix, iy = lins[(i+1)%3].inter(lins[(i+2)%3])
+		hi = Line(ix, iy, ix+dx, iy+dy)
+		px, py = l.inter(hi)
+		d = ((ix-px)**2 + (iy-py)**2) ** 0.5 / 3.0
+		dh = horizon2.dist(ix, iy)
+		d *= d_translation / dh
+		if ix < px: d = -d
+		add_d.append(d)
+	compute_new_lines(add_d)
+
+	# Plot perspective lines
+	for g in gs:
+		for l in groups2[g]:
+			l.plot()
+
+	# Plot horizontal lines
+	j = (len(groups[gs[0]]) - 1) // 2
+	for i in range(len(groups2[gs[1]])-1):
+		l = groups2[gs[1]][i]
+		l2 = groups2[gs[1]][i+1]
+		x, y = l.inter(groups2[gs[0]][j])
+		x2, y2 = l2.inter(groups2[gs[0]][j+1])
+		a = (y2 - y) / (x2 - x)
+		b = y - a*x
+		l2 = Line(0, b, W, b+W*a, groups[gh][0]._col)
+		l2.plot()
 
 	# Show figures
 	pl.show()
