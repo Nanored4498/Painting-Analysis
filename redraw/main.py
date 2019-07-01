@@ -75,6 +75,8 @@ def main():
 	a = read_attributes(l, ['x', 'y', 'width', 'height'])
 	im_x, im_y = a['x'], a['y']
 	im_w, im_h = a['width'], a['height']
+	im_bot = im_y+im_h
+	im_right = im_x+im_w
 
 	# Creation of Figure 1
 	pl.figure(1)
@@ -132,10 +134,7 @@ def main():
 
 	################################################
 	# Importance of the vanish points of depth lines
-	center_coeff = 6
-	# Importance of the horizontal lines on the ground
-	# to readjust the horizon lines
-	horizon_coeff = 1.7
+	center_coeff = 5
 	################################################
 	
 	# Computing the mean of horizontal lines coefficient
@@ -144,114 +143,130 @@ def main():
 			gh = g
 			ma = sum(l._a for l in groups[g]) / len(groups[g])
 
-	# Recompute vanishing points
+	# Compute a new horizon and a bottom line
 	gs = sorted(dots.keys(), key=lambda g: dots[g][0])
-	print(gs)
-	print(dots[gs[0]][0], dots[gs[1]][0], dots[gs[2]][0])
 	dx = 0.5 * (dots[gs[2]][0] - dots[gs[0]][0])
 	a = (dots[gs[0]][0] + center_coeff * dots[gs[1]][0] + dots[gs[2]][0]) / (2 + center_coeff) - dx
 	dy = 0.5 * (dots[gs[2]][1] - dots[gs[0]][1])
-	dy = (dy + horizon_coeff * ma * dx) / (1 + horizon_coeff)
 	b = (dots[gs[0]][1] + center_coeff * dots[gs[1]][1] + dots[gs[2]][1]) / (2 + center_coeff) - dy
-	dots2 = {gs[i] : (a+i*dx, b+i*dy) for i in range(3)}
 	horizon2 = Line(a-3*dx, b-3*dy, a+3*dx, b+3*dy, horizon._col)
-	horizon2.plot()
-	bottom = horizon2.translate(0, im_y+im_h - 0.5 * (horizon2.y(im_x) + horizon2.y(im_x+im_w)))
+	y_translation = im_bot - 0.5 * (horizon2.y(im_x) + horizon2.y(im_right))
+	d_translation = dx * y_translation / (dx**2 + dy**2) ** 0.5
+	bottom = horizon2.translate(0, y_translation)
 
-	ds = [None]*3
-
-	# Recompute parallel lines
-	datas = {}
-	groups2 = {}
-	dx, dy = 0, 0
-	for g in dots2:
-		x, y = dots2[g]
-		pl.scatter(x, y)
-		im_bot = im_y+im_h
-		xls = [l.x(im_bot) for l in groups[g]]
-		x0, x1 = min(xls), max(xls)
-		l0, l1 = Line(x, y, x0, im_bot), Line(x, y, x1, im_bot)
-		p0, p1 = bottom.inter(l0), bottom.inter(l1)
-		nls = len(xls)
-		col = groups[g][0]._col
-		a, b = p0
-		dx += (p1[0] - p0[0]) / (nls-1) * (1 if g != gs[1] else center_coeff) / (2 + center_coeff)
-		dy += (p1[1] - p0[1]) / (nls-1) * (1 if g != gs[1] else center_coeff) / (2 + center_coeff)
-		datas[g] = x, y, a, b, col, nls
-		i = gs.index(g)
-		dx2 = (p1[0] - p0[0]) / (nls-1)
-		dy2 = (p1[1] - p0[1]) / (nls-1)
-		ds[i] = (dx2**2 + dy2**2)**0.5
-
+	# Initial values to optimize
 	xs = [dots[gs[i]][0] for i in range(3)]
 	ys = [dots[gs[i]][1] for i in range(3)]
+	ds = []
+	# Coefficients in the objective functions
 	cxs = [(xs[1]-xs[0])**(-2), center_coeff * 4*(xs[2]-xs[0])**(-2), (xs[2]-xs[1])**(-2)]
 	cys = [(ys[1]-ys[0])**(-2), center_coeff * 4*(ys[2]-ys[0])**(-2), (ys[2]-ys[1])**(-2)]
-	cds = (max(ds) - min(ds)) ** (-2)
+	p1s, p2s = [], []
+	nls = []
 
-	V = sympy.symbols('x0 x2 y0 y2 d0 d2')
-	X0, X2, Y0, Y2, D0, D2 = V
-	X1 = (X0*D2 + X2*D0) / (D0 + D2)
-	Y1 = (Y0*D2 + Y2*D0) / (D0 + D2)
-	D1 = 2 * D0 * D2 / (D0 + D2)
-	X, Y, D = [X0, X1, X2], [Y0, Y1, Y2], [D0, D1, D2]
-	F = 0
-	for i in range(3):
-		F += cxs[i]*(X[i]-xs[i])**2 + cys[i]*(Y[i]-ys[i])**2 + cds*(D[i]-ds[i])**2
-	G = [F.diff(v) for v in V]
-	H = [[g.diff(v) for v in V] for g in G]
-
-	def newton(v2):
-		s = [(V[i], v2[i]) for i in range(6)]
-		fv = float(F.subs(s))
-		gv = np.array([float(g.subs(s)) for g in G])
-		print(fv, max(abs(gv)))
-		hv = np.array([[float(hi.subs(s)) for hi in h] for h in H])
-		hvi = np.linalg.inv(hv)
-		return v2 - hvi.dot(gv)
-	
-	v2 = np.array([xs[0], xs[2], ys[0], ys[2], ds[0], ds[2]])
-	for i in range(4):
-		v2 = newton(v2)
-	s = [(V[i], v2[i]) for i in range(6)]
-	xs, ys, ds = [float(x.subs(s)) for x in X], [float(y.subs(s)) for y in Y], [float(d.subs(s)) for d in D]
-
-	d0c, d0s = 0, 0
-	for g in datas:
-		a = datas[g][2]
-		da = (a - int(a / dx) * dx) / dx * 2 * np.pi
-		d0c += np.math.cos(da) * (1 if g != gs[1] else center_coeff)
-		d0s += np.math.sin(da) * (1 if g != gs[1] else center_coeff)
-	t0 = np.math.atan2(d0s, d0c)
-	if t0 < 0 : t0 += 2 * np.pi
-	d0 = t0 * dx / (2 * np.pi)
-	for g in datas:
-		x, y, a, b, col, nls = datas[g]
-		da = a - int(a / dx) * dx
-		if 2*(da - d0) > dx: da -= dx
-		elif 2*(d0 - da) > dx: da += dx
-		a += d0 - da
-		b += (d0 - da) * dy / dx
-		a += a - x
-		b += b - y
-		groups2[g] = []
-		xls = [l.x(im_bot) for l in groups[g]]
-		x0, x1 = min(xls), max(xls)
-		l0, l1 = Line(x, y, x0, im_bot), Line(x, y, x1, im_bot)
+	# Computing some usefull values
+	for g in gs:
+		x, y = dots[g]
+		ols = sorted(groups[g], key=lambda l: l.x(im_bot))
+		l0, l1 = Line(x, y, ols[0].x(im_bot), im_bot), Line(x, y, ols[-1].x(im_bot), im_bot)
 		p0, p1 = bottom.inter(l0), bottom.inter(l1)
-		nls = len(xls)
-		dx2 = (p1[0] - p0[0]) / (nls-1)
-		dy2 = (p1[1] - p0[1]) / (nls-1)
-		print(g, (dx2**2 + dy2**2)**0.5)
-		for i in range(nls):
-			l = Line(x, y, a + 2 * i * dx2, b + 2 * i * dy2, col)
-			groups2[g].append(l)
-			l.plot()
+		nl = len(ols)
+		col = groups[g][0]._col
+		dx = (p1[0] - p0[0]) / (nl-1)
+		dy = (p1[1] - p0[1]) / (nl-1)
+		nls.append(nl)
+		ds.append((dx**2 + dy**2) ** 0.5)
+		for l, ps in [(ols[0], p1s), (ols[-1], p2s)]:
+			x = l.x(im_bot)
+			if x < im_x: x, y = im_x, l.y(im_x)
+			elif x > im_right: x, y = im_right, l.y(im_right)
+			else: y = l.y(x)
+			ps.append((x, y))
+	cds = (min(ds) / 3) ** (-2)
 
-	for l in groups2[gs[2]]:
-		x, y = l.inter(groups2[gs[0]][0])
-		l2 = Line(x-20*dx, y-20*dy, x+20*dx, y+20*dy, groups[gh][0]._col)
-		l2.plot()
+	# V = sympy.symbols('x0 x2 y0 y2 d0 d2')
+	# X0, X2, Y0, Y2, D0, D2 = V
+	# X1 = (X0*D2 + X2*D0) / (D0 + D2)
+	# Y1 = (Y0*D2 + Y2*D0) / (D0 + D2)
+	# D1 = 2 * D0 * D2 / (D0 + D2)
+	# NU = sympy.sqrt((X2 - X1)**2 + (Y2 - Y1)**2)
+	# U = (X2 - X1) / NU, (Y2 - Y1) / NU
+	# N = (Y1 - Y2) / NU, (X2 - X1) / NU
+	# X, Y, D = [X0, X1, X2], [Y0, Y1, Y2], [D0, D1, D2]
+	# BS, CS = [], []
+	# F = 0
+	# for i in range(3):
+	# 	APX, APY = p1s[i][0] - X[i], p1s[i][1] - Y[i]
+	# 	N_AP = sympy.simplify(N[0] * APX + N[1] * APY)
+	# 	BX = sympy.simplify(X[i] + APX * d_translation / N_AP)
+	# 	BY = sympy.simplify(Y[i] + APY * d_translation / N_AP)
+	# 	CX = BX + (nls[i] - 1) * D[i] * U[0]
+	# 	CY = BY + (nls[i] - 1) * D[i] * U[1]
+	# 	BS.append((BX, BY))
+	# 	CS.append((CX, CY))
+	# 	ACX, ACY = CX - X[i], CY - Y[i]
+	# 	CP2X, CP2Y = p2s[i][0] - CX, p2s[i][1] - CY
+	# 	DP2 = (CP2X * ACY - CP2Y * ACX) ** 2 / (ACX**2 + ACY**2)
+	# 	F += cxs[i]*(X[i]-xs[i])**2 + cys[i]*(Y[i]-ys[i])**2 + cds * DP2
+	# G = [F.diff(v) for v in V]
+	# H = [[g.diff(v) for v in V] for g in G]
+
+	# def newton(v2):
+	# 	s = [(V[i], v2[i]) for i in range(6)]
+	# 	fv = float(F.subs(s))
+	# 	gv = np.array([float(g.subs(s)) for g in G])
+	# 	print(fv, max(abs(gv)))
+	# 	hv = np.array([[float(hi.subs(s)) for hi in h] for h in H])
+	# 	hvi = np.linalg.inv(hv)
+	# 	return v2 - hvi.dot(gv)
+	
+	# v2 = np.array([xs[0], xs[2], ys[0], ys[2], ds[0], ds[2]])
+	# s = [(V[i], v2[i]) for i in range(6)]
+	# xs, ys, ds = [float(x.subs(s)) for x in X], [float(y.subs(s)) for y in Y], [float(d.subs(s)) for d in D]
+	# print(xs)
+	# print(ys)
+	# print(ds)
+	# for i in range(3):
+	# 	v2 = newton(v2)
+	# 	s = [(V[i], v2[i]) for i in range(6)]
+	# 	xs, ys, ds = [float(x.subs(s)) for x in X], [float(y.subs(s)) for y in Y], [float(d.subs(s)) for d in D]
+	# 	print(xs)
+	# 	print(ys)
+	# 	print(ds)
+	
+	xs = [136.64530420611752, 1150.345165488534, 2522.897642552893]
+	ys = [819.5731053628471, 764.5395970563529, 690.0240712753191]
+	ds = [99.95955861425124, 114.99181170194613, 135.34552486638526]
+
+	# Recompute the new horizon and the bottom line
+	dx, dy = xs[2] - xs[0], ys[2] - ys[0]
+	horizon2 = Line(xs[0]-dx, ys[0]-dx, xs[2]+dx, ys[2]+dx, horizon._col)
+	nd = (dx**2 + dy**2) ** 0.5
+	dx /= nd
+	dy /= nd
+	print(dx, dy)
+	y_translation = d_translation / dx
+	bottom = horizon2.translate(0, y_translation)
+
+	for i in range(3):
+		g = gs[i]
+		col = groups[g][0]._col
+		x, y = xs[i], ys[i]
+		px, py = p1s[i]
+		apx, apy = px - x, py - y
+		t = d_translation / (dx*apy - dy*apx)
+		px, py = x + apx*t, y + apy*t
+		d = ds[i]
+		for _ in range(nls[i]):
+			l = Line(x, y, px, py, col)
+			l.plot()
+			px += dx * d
+			py += dy * d
+
+	# for l in groups2[gs[2]]:
+	# 	x, y = l.inter(groups2[gs[0]][0])
+	# 	l2 = Line(x-20*dx, y-20*dy, x+20*dx, y+20*dy, groups[gh][0]._col)
+	# 	l2.plot()
 
 	# Show figures
 	pl.show()
