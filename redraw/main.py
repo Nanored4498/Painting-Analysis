@@ -4,6 +4,10 @@ import pylab as pl
 import numpy as np
 import sympy
 
+STROKE_WIDTH=-1
+STROKE_WIDTH_H=3
+R=4
+
 class Line:
 	def __init__(self, x1, y1, x2, y2, col=(0, 0, 0)):
 		self._x = np.array([x1, x2])
@@ -38,6 +42,12 @@ class Line:
 		
 	def plot(self):
 		pl.plot(self._x, self._y, color=self._col)
+	
+	def write(self, out, horizon=False):
+		l = f'\t<line x1="{self._x[0]}" y1="{self._y[0]}" x2="{self._x[1]}" y2="{self._y[1]}"'
+		l += f' style="stroke:rgb({int(255*self._col[0])}, {int(255*self._col[1])}, {int(255*self._col[2])});'
+		l += f' stroke-width:{STROKE_WIDTH_H if horizon else STROKE_WIDTH}" />'
+		print(l, file=out)
 
 def read_attributes(l, A):
 	"""
@@ -56,23 +66,28 @@ def main():
 	parser = argparse.ArgumentParser(description='Redraw the perspective lines of a SVG correctly')
 	parser.add_argument('filename', type=str,
 						help='The path to the SVG file to redraw')
-	parser.add_argument()
+	parser.add_argument('-o', type=str, help='The path to the ouput SVG file')
 	args = parser.parse_args()
 
-	# Opening the file
+	# Opening the files
 	try:
 		f = open(args.filename, "r")
 	except FileNotFoundError:
 		print("File not found:", args.filename, file=sys.stderr)
 		exit(1)
+	out = sys.stdout if args.o == None else open(args.o, "w")
 
 	# Reading the size
-	l = f.readline().replace(' ', '')
+	l = f.readline()
+	print(l, file=out, end='')
+	l = l.replace(' ', '')
 	size = read_attributes(l, ['width', 'height'])
 	W, H = size['width'], size['height']
 	
 	# Reading painting position and size
-	l = f.readline().replace(' ', '')
+	l = f.readline()
+	print(l, file=out, end='')
+	l = l.replace(' ', '')
 	a = read_attributes(l, ['x', 'y', 'width', 'height'])
 	im_x, im_y = a['x'], a['y']
 	im_w, im_h = a['width'], a['height']
@@ -85,6 +100,8 @@ def main():
 	pl.ylim(H, 0)
 	
 	# Reading groups of parallel lines plus the horizon
+	global STROKE_WIDTH
+	global STROKE_WIDTH_H
 	groups = {}
 	while True:
 		l = f.readline().replace(' ', '').replace('\t', '')
@@ -99,6 +116,10 @@ def main():
 		start = end+1
 		end = l.find(')', start)
 		b = int(l[start:end]) / 255.0
+		start = l.find('stroke-width:', end)
+		strwid = float(l[start+len('stroke-width:'):l.find('"', start)])
+		if STROKE_WIDTH < 0: STROKE_WIDTH = strwid
+		elif strwid > STROKE_WIDTH: STROKE_WIDTH_H = strwid
 		li = Line(cs['x1'], cs['y1'], cs['x2'], cs['y2'], (r, g, b))
 		g = int(255 * (r + 256*(g + 256*b)))
 		if g in groups: groups[g].append(li)
@@ -108,13 +129,14 @@ def main():
 	del groups[g]
 	
 	# Reading dots and making the correspondance whith groups of lines
+	global R
 	dots = {}
 	while True:
 		if not l.startswith("<circle"): break
-		cs = read_attributes(l, ['cx', 'cy'])
+		cs = read_attributes(l, ['cx', 'cy', 'r'])
 		best = float('inf')
 		bg = 0
-		x, y = cs['cx'], cs['cy']
+		x, y, R = cs['cx'], cs['cy'], cs['r']
 		for g in groups:
 			li = groups[g][0]
 			dis = li.dist(x, y)
@@ -183,66 +205,67 @@ def main():
 			elif x > im_right: x, y = im_right, l.y(im_right)
 			else: y = l.y(x)
 			ps.append((x, y))
-	cds = (min(ds) / 3) ** (-2)
+	cds = (min(ds) / 2) ** (-2)
 
-	# V = sympy.symbols('x0 x2 y0 y2 d0 d2')
-	# X0, X2, Y0, Y2, D0, D2 = V
-	# X1 = (X0*D2 + X2*D0) / (D0 + D2)
-	# Y1 = (Y0*D2 + Y2*D0) / (D0 + D2)
-	# D1 = 2 * D0 * D2 / (D0 + D2)
-	# NU = sympy.sqrt((X2 - X1)**2 + (Y2 - Y1)**2)
-	# U = (X2 - X1) / NU, (Y2 - Y1) / NU
-	# N = (Y1 - Y2) / NU, (X2 - X1) / NU
-	# X, Y, D = [X0, X1, X2], [Y0, Y1, Y2], [D0, D1, D2]
-	# BS, CS = [], []
-	# F = 0
-	# for i in range(3):
-	# 	APX, APY = p1s[i][0] - X[i], p1s[i][1] - Y[i]
-	# 	N_AP = sympy.simplify(N[0] * APX + N[1] * APY)
-	# 	BX = sympy.simplify(X[i] + APX * d_translation / N_AP)
-	# 	BY = sympy.simplify(Y[i] + APY * d_translation / N_AP)
-	# 	CX = BX + (nls[i] - 1) * D[i] * U[0]
-	# 	CY = BY + (nls[i] - 1) * D[i] * U[1]
-	# 	BS.append((BX, BY))
-	# 	CS.append((CX, CY))
-	# 	ACX, ACY = CX - X[i], CY - Y[i]
-	# 	CP2X, CP2Y = p2s[i][0] - CX, p2s[i][1] - CY
-	# 	DP2 = (CP2X * ACY - CP2Y * ACX) ** 2 / (ACX**2 + ACY**2)
-	# 	F += cxs[i]*(X[i]-xs[i])**2 + cys[i]*(Y[i]-ys[i])**2 + cds * DP2
-	# G = [F.diff(v) for v in V]
-	# H = [[g.diff(v) for v in V] for g in G]
+	# Computing objective function, its gradient and its Hessian matrix
+	V = sympy.symbols('x0 x2 y0 y2 d0 d2')
+	X0, X2, Y0, Y2, D0, D2 = V
+	X1 = (X0*D2 + X2*D0) / (D0 + D2)
+	Y1 = (Y0*D2 + Y2*D0) / (D0 + D2)
+	D1 = 2 * D0 * D2 / (D0 + D2)
+	NU = sympy.sqrt((X2 - X1)**2 + (Y2 - Y1)**2)
+	U = (X2 - X1) / NU, (Y2 - Y1) / NU
+	N = (Y1 - Y2) / NU, (X2 - X1) / NU
+	X, Y, D = [X0, X1, X2], [Y0, Y1, Y2], [D0, D1, D2]
+	F = 0
+	for i in range(3):
+		APX, APY = p1s[i][0] - X[i], p1s[i][1] - Y[i]
+		N_AP = sympy.simplify(N[0] * APX + N[1] * APY)
+		BX = sympy.simplify(X[i] + APX * d_translation / N_AP)
+		BY = sympy.simplify(Y[i] + APY * d_translation / N_AP)
+		CX = BX + (nls[i] - 1) * D[i] * U[0]
+		CY = BY + (nls[i] - 1) * D[i] * U[1]
+		ACX, ACY = CX - X[i], CY - Y[i]
+		CP2X, CP2Y = p2s[i][0] - CX, p2s[i][1] - CY
+		DP2 = (CP2X * ACY - CP2Y * ACX) ** 2 / (ACX**2 + ACY**2)
+		F += cxs[i]*(X[i]-xs[i])**2 + cys[i]*(Y[i]-ys[i])**2 + cds * DP2
+	G = [F.diff(v) for v in V]
+	H = [[g.diff(v) for v in V] for g in G]
 
-	# def newton(v2):
-	# 	s = [(V[i], v2[i]) for i in range(6)]
-	# 	fv = float(F.subs(s))
-	# 	gv = np.array([float(g.subs(s)) for g in G])
-	# 	print(fv, max(abs(gv)))
-	# 	hv = np.array([[float(hi.subs(s)) for hi in h] for h in H])
-	# 	hvi = np.linalg.inv(hv)
-	# 	return v2 - hvi.dot(gv)
+	# Newton method iteration
+	def newton(v2):
+		s = [(V[i], v2[i]) for i in range(6)]
+		fv = float(F.subs(s))
+		gv = np.array([float(g.subs(s)) for g in G])
+		print(fv, max(abs(gv)))
+		hv = np.array([[float(hi.subs(s)) for hi in h] for h in H])
+		hvi = np.linalg.inv(hv)
+		return v2 - hvi.dot(gv)
 	
-	# v2 = np.array([xs[0], xs[2], ys[0], ys[2], ds[0], ds[2]])
-	# s = [(V[i], v2[i]) for i in range(6)]
-	# xs, ys, ds = [float(x.subs(s)) for x in X], [float(y.subs(s)) for y in Y], [float(d.subs(s)) for d in D]
-	# print(xs)
-	# print(ys)
-	# print(ds)
-	# for i in range(3):
-	# 	v2 = newton(v2)
-	# 	s = [(V[i], v2[i]) for i in range(6)]
-	# 	xs, ys, ds = [float(x.subs(s)) for x in X], [float(y.subs(s)) for y in Y], [float(d.subs(s)) for d in D]
-	# 	print(xs)
-	# 	print(ys)
-	# 	print(ds)
+	# Applying the Newton method
+	v2 = np.array([xs[0], xs[2], ys[0], ys[2], ds[0], ds[2]])
+	s = [(V[i], v2[i]) for i in range(6)]
+	xs, ys, ds = [float(x.subs(s)) for x in X], [float(y.subs(s)) for y in Y], [float(d.subs(s)) for d in D]
+	print(xs)
+	print(ys)
+	print(ds)
+	for i in range(3):
+		v2 = newton(v2)
+		s = [(V[i], v2[i]) for i in range(6)]
+		xs, ys, ds = [float(x.subs(s)) for x in X], [float(y.subs(s)) for y in Y], [float(d.subs(s)) for d in D]
+		print(xs)
+		print(ys)
+		print(ds)
 	
-	xs = [136.64530420611752, 1150.345165488534, 2522.897642552893]
-	ys = [819.5731053628471, 764.5395970563529, 690.0240712753191]
-	ds = [99.95955861425124, 114.99181170194613, 135.34552486638526]
+	# xs = [136.64530420611752, 1150.345165488534, 2522.897642552893]
+	# ys = [819.5731053628471, 764.5395970563529, 690.0240712753191]
+	# ds = [99.95955861425124, 114.99181170194613, 135.34552486638526]
 
 	# Recompute the new horizon and the bottom line
 	dx, dy = xs[2] - xs[0], ys[2] - ys[0]
 	horizon2 = Line(xs[0]-dx, ys[0]-dy, xs[2]+dx, ys[2]+dy, horizon._col)
 	horizon2.plot()
+	horizon2.write(out, True)
 	nd = (dx**2 + dy**2) ** 0.5
 	dx /= nd
 	dy /= nd
@@ -283,6 +306,7 @@ def main():
 	add_d = []
 	for i in range(3):
 		pl.scatter(xs[i], ys[i])
+		print(f'<circle cx="{xs[i]}" cy="{ys[i]}" r="{R}" fill="red" />', file=out)
 		l = lins[i]
 		ix, iy = lins[(i+1)%3].inter(lins[(i+2)%3])
 		hi = Line(ix, iy, ix+dx, iy+dy)
@@ -298,6 +322,7 @@ def main():
 	for g in gs:
 		for l in groups2[g]:
 			l.plot()
+			l.write(out)
 
 	# Plot horizontal lines
 	j = (len(groups[gs[0]]) - 1) // 2
@@ -310,8 +335,10 @@ def main():
 		b = y - a*x
 		l2 = Line(0, b, W, b+W*a, groups[gh][0]._col)
 		l2.plot()
+		l2.write(out)
 
 	# Show figures
+	print('</svg>', file=out)
 	pl.show()
 
 if __name__ == "__main__":
