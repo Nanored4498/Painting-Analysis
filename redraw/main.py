@@ -66,7 +66,7 @@ def main():
 	parser = argparse.ArgumentParser(description='Redraw the perspective lines of a SVG correctly')
 	parser.add_argument('filename', type=str,
 						help='The path to the SVG file to redraw')
-	parser.add_argument('-o', type=str, help='The path to the ouput SVG file')
+	parser.add_argument('-o', metavar='output', type=str, help='The path to the ouput SVG file')
 	args = parser.parse_args()
 
 	# Opening the files
@@ -157,7 +157,7 @@ def main():
 
 	################################################
 	# Importance of the vanish points of depth lines
-	center_coeff = 5
+	center_coeff = 15
 	################################################
 	
 	# Computing the mean of horizontal lines coefficient
@@ -182,8 +182,11 @@ def main():
 	ys = [dots[gs[i]][1] for i in range(3)]
 	ds = []
 	# Coefficients in the objective functions
-	cxs = [(xs[1]-xs[0])**(-2), center_coeff * 4*(xs[2]-xs[0])**(-2), (xs[2]-xs[1])**(-2)]
-	cys = [(ys[1]-ys[0])**(-2), center_coeff * 4*(ys[2]-ys[0])**(-2), (ys[2]-ys[1])**(-2)]
+	cxys = [2/ ((xs[1]-xs[0])**2 + (ys[1]-ys[0])**2),
+			8 * center_coeff / ((xs[2]-xs[0])**2 + (ys[2]-ys[0])**2),
+			2 / ((xs[2]-xs[1])**2 + (ys[2]-ys[1])**2)]
+	cx = (abs(xs[2]-xs[0]) + abs(ys[2]-ys[0])) / abs(xs[2]-xs[0])
+	cy = (abs(xs[2]-xs[0]) + abs(ys[2]-ys[0])) / abs(ys[2]-ys[0])
 	p1s, p2s = [], []
 	nls = []
 
@@ -191,21 +194,23 @@ def main():
 	for g in gs:
 		x, y = dots[g]
 		ols = sorted(groups[g], key=lambda l: l.x(im_bot))
-		l0, l1 = Line(x, y, ols[0].x(im_bot), im_bot), Line(x, y, ols[-1].x(im_bot), im_bot)
-		p0, p1 = bottom.inter(l0), bottom.inter(l1)
+		ls, ps = [], []
+		for l in ols:
+			lx, ly = l.x(im_bot), im_bot
+			if lx < im_x: lx, ly = im_x, l.y(im_x)
+			elif lx > im_right: lx, ly = im_right, l.y(im_right)
+			l2 = Line(x, y, lx, ly)
+			ls.append(l2)
+			ps.append(bottom.inter(l2))
 		nl = len(ols)
 		col = groups[g][0]._col
-		dx = (p1[0] - p0[0]) / (nl-1)
-		dy = (p1[1] - p0[1]) / (nl-1)
+		dx = (ps[0][0] - ps[-1][0]) / (nl-1)
+		dy = (ps[0][1] - ps[-1][1]) / (nl-1)
 		nls.append(nl)
 		ds.append((dx**2 + dy**2) ** 0.5)
-		for l, ps in [(ols[0], p1s), (ols[-1], p2s)]:
-			x = l.x(im_bot)
-			if x < im_x: x, y = im_x, l.y(im_x)
-			elif x > im_right: x, y = im_right, l.y(im_right)
-			else: y = l.y(x)
-			ps.append((x, y))
-	cds = (min(ds) / 2) ** (-2)
+		p1s.append(ps[0])
+		p2s.append(ps[-1])
+	cds = [2 / ((1 + nls[i]**0.2) * ds[i] / 6.0) ** 2 for i in range(3)]
 
 	# Computing objective function, its gradient and its Hessian matrix
 	V = sympy.symbols('x0 x2 y0 y2 d0 d2')
@@ -213,11 +218,11 @@ def main():
 	X1 = (X0*D2 + X2*D0) / (D0 + D2)
 	Y1 = (Y0*D2 + Y2*D0) / (D0 + D2)
 	D1 = 2 * D0 * D2 / (D0 + D2)
-	NU = sympy.sqrt((X2 - X1)**2 + (Y2 - Y1)**2)
-	U = (X2 - X1) / NU, (Y2 - Y1) / NU
-	N = (Y1 - Y2) / NU, (X2 - X1) / NU
+	NU = sympy.sqrt((X2 - X0)**2 + (Y2 - Y0)**2)
+	U = (X2 - X0) / NU, (Y2 - Y0) / NU
+	N = (Y0 - Y2) / NU, (X2 - X0) / NU
 	X, Y, D = [X0, X1, X2], [Y0, Y1, Y2], [D0, D1, D2]
-	F = 0
+	F = 400 * (Y2 - Y0)**2 / ((X2 - X0)**2 + (Y2 - Y0)**2) * (D2 - D0)**2 / (ds[2] - ds[0])**2
 	for i in range(3):
 		APX, APY = p1s[i][0] - X[i], p1s[i][1] - Y[i]
 		N_AP = sympy.simplify(N[0] * APX + N[1] * APY)
@@ -228,7 +233,7 @@ def main():
 		ACX, ACY = CX - X[i], CY - Y[i]
 		CP2X, CP2Y = p2s[i][0] - CX, p2s[i][1] - CY
 		DP2 = (CP2X * ACY - CP2Y * ACX) ** 2 / (ACX**2 + ACY**2)
-		F += cxs[i]*(X[i]-xs[i])**2 + cys[i]*(Y[i]-ys[i])**2 + cds * DP2
+		F += cx*cxys[i]*(X[i]-xs[i])**2 + cy*cxys[i]*(Y[i]-ys[i])**2 + cds[i] * DP2
 	G = [F.diff(v) for v in V]
 	H = [[g.diff(v) for v in V] for g in G]
 
@@ -311,7 +316,8 @@ def main():
 		ix, iy = lins[(i+1)%3].inter(lins[(i+2)%3])
 		hi = Line(ix, iy, ix+dx, iy+dy)
 		px, py = l.inter(hi)
-		d = ((ix-px)**2 + (iy-py)**2) ** 0.5 / 3.0
+		d = ((ix-px)**2 + (iy-py)**2) ** 0.5
+		d *= (1 if i == 1 else center_coeff*0.5) / (1 + center_coeff)
 		dh = horizon2.dist(ix, iy)
 		d *= d_translation / dh
 		if ix < px: d = -d
