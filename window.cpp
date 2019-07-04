@@ -126,7 +126,7 @@ void Window::shiftSelection(int a) {
 
 void Window::keyPressEvent(QKeyEvent *event) {
 	switch(event->key()) {
-	case Qt::Key_Tab:
+	case Qt::Key_A:
 		plotedImageBut->setCurrentIndex(1 - plotedImageBut->currentIndex());
 		break;
 	

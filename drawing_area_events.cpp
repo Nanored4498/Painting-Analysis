@@ -121,10 +121,10 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		double s = scale * scale_im;
 		/*** Select Soble Zone ***/
 		if(pa_data == nullptr) {
-			if(px < 0.03 * width()) px = 0;
-			if(py < 0.03 * height()) py = 0;
-			if(px > 0.97 * width()) px = width();
-			if(py > 0.97 * height()) py = height();
+			if(px < 0.02 * width()) px = 0;
+			if(py < 0.02 * height()) py = 0;
+			if(px > 0.98 * width()) px = width();
+			if(py > 0.98 * height()) py = height();
 			double dx = (width() - scale_im*image0.width())/2.0 , dy = (height() - scale_im*image0.height())/2.0;
 			zonePoints.emplace_back(sx + (px - dx) / s, sy + (py - dy) / s);
 			resizeLines();

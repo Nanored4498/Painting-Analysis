@@ -59,9 +59,15 @@ double sobel(Color* im, double* &norm, double* &angle, int W, int H, bool *mask=
 	for(int x = 1; x < W-1; x++) {
 		for(int y = 1; y < H-1; y++) {
 			int pix = x + y*W;
-			if(mask != nullptr && !mask[pix]) {
-				norm[pix] = angle[pix] = 0;
-				continue;
+			if(mask != nullptr) {
+				bool bad = false;
+				for(int i = -1; i <= 1; i++)
+					for(int j = -W; j <= W; j += W)
+						if(!mask[pix+i+j]) bad = true;
+				if(bad) {
+					norm[pix] = angle[pix] = 0;
+					continue;
+				}
 			}
 			double no = 0;
 			double co = 0, si = 0;
@@ -241,7 +247,6 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask) {
 	time = std::chrono::high_resolution_clock::now();
 
 	clean(no, W, H, 0.0067*sigma_col*m, 0.075*diag);
-	// clean(no, W, H, 0.0045*sigma_col*m, 0.03*diag);
 	time2 = std::chrono::high_resolution_clock::now();
 	dtime = time2 - time;
 	std::cerr << "Cleaning: " << dtime.count() << std::endl;
@@ -410,6 +415,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 		else if(y1 < 0) x1 = r/c, y1 = 0;
 		std::vector<int>::iterator ind_it = indices.begin();
 		for(PA::Line &l : ls) {
+			if(std::abs(t - l.theta) > 0.6) continue;
 			double co = std::cos(l.theta), si = std::sin(l.theta);
 			double d0 = co * x0 + si * y0 - l.rho;
 			double d1 = co * x1 + si * y1 - l.rho;
