@@ -70,6 +70,8 @@ public:
 	inline void getCSR(double &c, double &s, double &r) const { c = co, s = si, r = li.rho; }
 	double getTheta() const { return li.theta; }
 	double getRho() const { return li.rho; }
+	double getA() const { return li.a; }
+	double getB() const { return li.b; }
 
 private:
 	PA::Line li;

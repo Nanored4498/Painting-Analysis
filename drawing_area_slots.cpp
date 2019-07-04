@@ -141,27 +141,20 @@ void DrawingArea::selectionAction() {
 				int m = vvp[0].size();
 				int W = image0.width(), H = image0.height();
 				for(int s = 1; s <= n+m-2; s++) {
-					std::vector<PDD> ps;
-					for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
-						PDD p = vvp[a][s-a];
-						ps.push_back(p);
-					}
-					if(ps.size() > 1){
-						DLine l = pca_pdd(ps, W, H);
-						l.setGroup(0);
-						candidate_lines.push_back(l);
-						lines.push_back(&candidate_lines[candidate_lines.size()-1]);
-					}
-					ps.clear();
-					for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
-						PDD p = vvp[n-1-a][s-a];
-						ps.push_back(p);
-					}
-					if(ps.size() > 1) {
-						DLine l = pca_pdd(ps, W, H);
-						l.setGroup(0);
-						candidate_lines.push_back(l);
-						lines.push_back(&candidate_lines[candidate_lines.size()-1]);
+					for(int dir : {0, 1}) {
+						std::vector<PDD> ps;
+						for(int a = qMax(0, s-m+1); a <= qMin(n-1, s); a++) {
+							PDD p = vvp[(1-dir)*a + dir*(n-1-a)][s-a];
+							ps.push_back(p);
+						}
+						if(ps.size() > 1){
+							DLine l = pca_pdd(ps, W, H);
+							if(l.getB() > image0.height() && l.getB()+image0.width()*l.getA() > image0.height())
+								continue;
+							l.setGroup(0);
+							candidate_lines.push_back(l);
+							lines.push_back(&candidate_lines[candidate_lines.size()-1]);
+						}
 					}
 				}
 			}

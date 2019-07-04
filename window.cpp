@@ -19,6 +19,7 @@ Window::Window(): QMainWindow() {
 	saveAct = new QAction("&Save", this);
 	saveAct->setShortcuts(QKeySequence::Save);
 	saveAct->setStatusTip("Save the analysis in a SVG file");
+	saveAct->setEnabled(false);
 	connect(saveAct, SIGNAL(triggered()), this, SLOT(save()));
 
 	fileMenu = menuBar()->addMenu("&File");
@@ -90,12 +91,15 @@ void Window::open() {
 }
 
 void Window::save() {
-	QString name = QFileDialog::getSaveFileName(this, "Save to SVG", QDir::currentPath(), "Images (*.svg)");
+	const QString currFile = area->getFilename();
+	int li = currFile.lastIndexOf(".");
+	QString name = QFileDialog::getSaveFileName(this, "Save to SVG", currFile.left(li) + ".svg", "Images (*.svg)");
 	if(!name.endsWith(".svg")) name += ".svg";
 	if(!name.isEmpty()) area->save_svg(name.toStdString());
 }
 
 void Window::disableButs() {
+	saveAct->setEnabled(true);
 	sobelBut->setEnabled(true);
 	getLinesBut->setEnabled(false);
 	selectionBut->setEnabled(false);

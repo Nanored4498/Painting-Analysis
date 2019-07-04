@@ -16,7 +16,10 @@ DrawingArea::DrawingArea(QWidget *parent) : QWidget(parent) {
 
 bool DrawingArea::loadImage(const QString &fileName) {
 	QImage newImage;
-	if(!newImage.load(fileName)) return false;
+	if(!newImage.load(fileName)) {
+		qDebug("\033[31mError while loading the file: %s\033[0m", fileName.toStdString().c_str());
+		return false;
+	}
 	int W, H, C;
 	uchar* new_im = stbi_load(fileName.toStdString().data(), &W, &C, &H, 3);
 	if(!new_im) return false;

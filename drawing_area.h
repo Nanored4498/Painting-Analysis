@@ -26,6 +26,8 @@ public:
 	bool loadImage(const QString &fileName);
 	void save_svg(const std::string &filename) const;
 
+	const QString getFilename() const { return filename0; }
+
 signals:
 	void reinitialized();
 	void sobelComputed();

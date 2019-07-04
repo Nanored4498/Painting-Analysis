@@ -182,7 +182,7 @@ def main():
 	ys = [dots[gs[i]][1] for i in range(3)]
 	ds = []
 	# Coefficients in the objective functions
-	cxys = [2/ ((xs[1]-xs[0])**2 + (ys[1]-ys[0])**2),
+	cxys = [2 / ((xs[1]-xs[0])**2 + (ys[1]-ys[0])**2),
 			8 * center_coeff / ((xs[2]-xs[0])**2 + (ys[2]-ys[0])**2),
 			2 / ((xs[2]-xs[1])**2 + (ys[2]-ys[1])**2)]
 	cx = (abs(xs[2]-xs[0]) + abs(ys[2]-ys[0])) / abs(xs[2]-xs[0])
@@ -210,7 +210,7 @@ def main():
 		ds.append((dx**2 + dy**2) ** 0.5)
 		p1s.append(ps[0])
 		p2s.append(ps[-1])
-	cds = [2 / ((1 + nls[i]**0.2) * ds[i] / 6.0) ** 2 for i in range(3)]
+	cds = [1 / ((1 + nls[i]**0.2) * ds[i] / 8.0) ** 2 for i in range(3)]
 
 	# Computing objective function, its gradient and its Hessian matrix
 	V = sympy.symbols('x0 x2 y0 y2 d0 d2')
@@ -222,7 +222,7 @@ def main():
 	U = (X2 - X0) / NU, (Y2 - Y0) / NU
 	N = (Y0 - Y2) / NU, (X2 - X0) / NU
 	X, Y, D = [X0, X1, X2], [Y0, Y1, Y2], [D0, D1, D2]
-	F = 400 * (Y2 - Y0)**2 / ((X2 - X0)**2 + (Y2 - Y0)**2) * (D2 - D0)**2 / (ds[2] - ds[0])**2
+	F = 175 * (Y2 - Y0)**2 / ((X2 - X0)**2 + (Y2 - Y0)**2) * ( (D2 - D0)**2 / (ds[2] - ds[0])**2 + 0.9 )
 	for i in range(3):
 		APX, APY = p1s[i][0] - X[i], p1s[i][1] - Y[i]
 		N_AP = sympy.simplify(N[0] * APX + N[1] * APY)
