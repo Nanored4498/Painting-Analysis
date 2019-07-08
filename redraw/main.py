@@ -67,6 +67,7 @@ def main():
 	parser.add_argument('filename', type=str,
 						help='The path to the SVG file to redraw')
 	parser.add_argument('-o', metavar='output', type=str, help='The path to the ouput SVG file')
+	parser.add_argument('-d', action='store_true', help='if this argument is given the half of the lines of the center vanish point are removed')
 	args = parser.parse_args()
 
 	# Opening the files
@@ -76,6 +77,7 @@ def main():
 		print("File not found:", args.filename, file=sys.stderr)
 		exit(1)
 	out = sys.stdout if args.o == None else open(args.o, "w")
+	option_d = args.d
 
 	# Reading the size
 	l = f.readline()
@@ -195,22 +197,22 @@ def main():
 		x, y = dots[g]
 		ols = sorted(groups[g], key=lambda l: l.x(im_bot))
 		ls, ps = [], []
-		for l in ols:
+		for l in [ols[0], ols[-1]]:
 			lx, ly = l.x(im_bot), im_bot
 			if lx < im_x: lx, ly = im_x, l.y(im_x)
 			elif lx > im_right: lx, ly = im_right, l.y(im_right)
-			l2 = Line(x, y, lx, ly)
-			ls.append(l2)
-			ps.append(bottom.inter(l2))
+			ps.append((lx, ly))
+			ls.append(Line(x, y, lx, ly, l._col))
 		nl = len(ols)
-		col = groups[g][0]._col
-		dx = (ps[0][0] - ps[-1][0]) / (nl-1)
-		dy = (ps[0][1] - ps[-1][1]) / (nl-1)
 		nls.append(nl)
+		p0, p1 = ls[0].inter(bottom), ls[1].inter(bottom)
+		dx = (p0[0] - p1[0]) / (nl-1)
+		dy = (p0[1] - p1[1]) / (nl-1)
 		ds.append((dx**2 + dy**2) ** 0.5)
 		p1s.append(ps[0])
-		p2s.append(ps[-1])
-	cds = [1 / ((1 + nls[i]**0.2) * ds[i] / 8.0) ** 2 for i in range(3)]
+		p2s.append(ps[1])
+	cds = [1.5 / ((1 + nls[i]**0.25) * ds[i] / 6.0) ** 2 for i in range(3)]
+	if option_d: nls[1] = 1 + (nls[1] - 1) / 2
 
 	# Computing objective function, its gradient and its Hessian matrix
 	V = sympy.symbols('x0 x2 y0 y2 d0 d2')
@@ -223,6 +225,7 @@ def main():
 	N = (Y0 - Y2) / NU, (X2 - X0) / NU
 	X, Y, D = [X0, X1, X2], [Y0, Y1, Y2], [D0, D1, D2]
 	F = 175 * (Y2 - Y0)**2 / ((X2 - X0)**2 + (Y2 - Y0)**2) * ( (D2 - D0)**2 / (ds[2] - ds[0])**2 + 0.9 )
+	v2 = np.array([xs[0], xs[2], ys[0], ys[2], ds[0], ds[2]])
 	for i in range(3):
 		APX, APY = p1s[i][0] - X[i], p1s[i][1] - Y[i]
 		N_AP = sympy.simplify(N[0] * APX + N[1] * APY)
@@ -280,6 +283,9 @@ def main():
 	# Function to compute the new perspective lines with a translation
 	# for each group contains in add_d
 	groups2 = {}
+	if option_d:
+		nls[1] = round(2*(nls[1]-1) + 1)
+		ds[1] /= 2
 	def compute_new_lines(add_d):
 		for i in range(3):
 			g = gs[i]
@@ -332,9 +338,10 @@ def main():
 
 	# Plot horizontal lines
 	j = (len(groups[gs[0]]) - 1) // 2
-	for i in range(len(groups2[gs[1]])-1):
+	add = 2 if option_d else 1
+	for i in range(len(groups2[gs[1]])-add):
 		l = groups2[gs[1]][i]
-		l2 = groups2[gs[1]][i+1]
+		l2 = groups2[gs[1]][i+add]
 		x, y = l.inter(groups2[gs[0]][j])
 		x2, y2 = l2.inter(groups2[gs[0]][j+1])
 		a = (y2 - y) / (x2 - x)
