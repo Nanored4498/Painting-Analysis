@@ -41,7 +41,7 @@ private:
 	QPushButton *sobelBut;
 	QComboBox *plotedImageBut;
 
-	LabeledSlider *thresholdSli;
+	LabeledSlider *magThresholdSli, *sizeThresholdSli;
 	LabeledSlider *rBrushSli;
 };
 

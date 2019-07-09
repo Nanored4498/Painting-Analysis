@@ -76,9 +76,13 @@ Window::Window(): QMainWindow() {
 	slidW->setLayout(sliLayout);
 	layout->addWidget(slidW);
 
-	thresholdSli = new LabeledSlider("Sobel Threshold", 30, 89, 10*THRESHOLD0, 0.1);
-	sliLayout->addWidget(thresholdSli);
-	connect(thresholdSli, SIGNAL(valueChanged(int)), area, SLOT(changeThreshold(int)));
+	magThresholdSli = new LabeledSlider("Sobel Magnitude Threshold", 30, 89, 10*MAG_THRESHOLD0, 0.1);
+	sliLayout->addWidget(magThresholdSli);
+	connect(magThresholdSli, SIGNAL(valueChanged(int)), area, SLOT(changeMagThreshold(int)));
+
+	sizeThresholdSli = new LabeledSlider("Sobel Size Threshold", 20, 99, 10*SIZE_THRESHOLD0, 0.1);
+	sliLayout->addWidget(sizeThresholdSli);
+	connect(sizeThresholdSli, SIGNAL(valueChanged(int)), area, SLOT(changeSizeThreshold(int)));
 
 	rBrushSli = new LabeledSlider("Brush radius", 6, 35, RBRUSH0);
 	sliLayout->addWidget(rBrushSli);
@@ -147,6 +151,7 @@ Window::~Window() {
 	delete sobelBut;
 	delete plotedImageBut;
 
-	delete thresholdSli;
+	delete magThresholdSli;
+	delete sizeThresholdSli;
 	delete rBrushSli;
 }

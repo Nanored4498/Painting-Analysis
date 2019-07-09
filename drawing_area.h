@@ -11,7 +11,8 @@
 
 #define NBLINES 20
 #define RBRUSH0 10
-#define THRESHOLD0 6.7
+#define MAG_THRESHOLD0 6.7
+#define SIZE_THRESHOLD0 7.5
 
 #define UNSELECTED 0
 #define VANISH_POINT 1
@@ -39,7 +40,8 @@ public slots:
 	void computeSobel();
 	void selectionAction();
 	void selectPlot(int original);
-	void changeThreshold(int t);
+	void changeMagThreshold(int t);
+	void changeSizeThreshold(int t);
 	void changeRBrush(int r);
 
 protected:
@@ -71,7 +73,8 @@ private:
 	std::vector<DPoint> zonePoints;
 
 	PA::ProblemData *pa_data = nullptr;
-	double threshold_sobel = THRESHOLD0;
+	double mag_threshold = MAG_THRESHOLD0;
+	double size_threshold = SIZE_THRESHOLD0;
 	QImage sobelIm;
 	bool plotOriginal = true;
 

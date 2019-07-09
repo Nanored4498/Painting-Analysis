@@ -53,8 +53,8 @@ void DrawingArea::computeSobel() {
 		}
 	}
 	// Computing Sobel
-	if(pa_data) pa_data = PA::applySobelToBil(pa_data->bil, W, H, mask, threshold_sobel);
-	else pa_data = PA::applySobel(im, W, H, mask, threshold_sobel);
+	if(pa_data) pa_data = PA::applySobelToBil(pa_data->bil, W, H, mask, mag_threshold, size_threshold);
+	else pa_data = PA::applySobel(im, W, H, mask, mag_threshold, size_threshold);
 	PA::save_sobel("sobel.png", pa_data);
 	sobelIm.load("sobel.png");
 	for(int x = 0; x < W; x++) {
@@ -66,6 +66,7 @@ void DrawingArea::computeSobel() {
 		}
 	}
 	emit sobelComputed();
+	update();
 }
 
 void DrawingArea::selectionAction() {
@@ -184,8 +185,12 @@ void DrawingArea::selectPlot(int original) {
 	resize();
 }
 
-void DrawingArea::changeThreshold(int t) {
-	threshold_sobel = 0.1 * t;
+void DrawingArea::changeMagThreshold(int t) {
+	mag_threshold = 0.1 * t;
+}
+
+void DrawingArea::changeSizeThreshold(int t) {
+	size_threshold = 0.1 * t;
 }
 
 void DrawingArea::changeRBrush(int r) {
