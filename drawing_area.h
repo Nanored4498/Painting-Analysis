@@ -59,6 +59,7 @@ private:
 	void resizeLines();
 	void shiftSobelPixel(int x, int y, bool unbrush=false);
 	void eraseSobel(double px, double py);
+	bool isSobelPixel(int x, int y);
 	void computeHorizon();
 
 	static const std::vector<QColor> colors;

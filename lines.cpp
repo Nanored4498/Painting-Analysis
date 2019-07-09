@@ -134,7 +134,7 @@ uint pixelColori(int i, PA::ProblemData *data) {
 	t += 0.5;
 	#endif
 	double n = data->no[i] * 255.0 / data->m;
-	if(n > 0) n = 191 * std::pow(n / 255.0, 0.4) + 64;
+	if(n > 0) n = (255 - MIN_SOBEL_INTENSITY) * std::pow(n / 255.0, 0.5) + MIN_SOBEL_INTENSITY;
 	uint res = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-1))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-2))*n;
@@ -275,7 +275,7 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask, double thre
 	// std::cerr << "Lab to RGB and saving: " << dtime.count() << std::endl;
 	// time = std::chrono::high_resolution_clock::now();
 
-	return applySobelToBil(im2, W, H, mask, threshold);
+	return applySobelToBil(im2, W, H, mask, threshold, size_threshold);
 }
 
 #define TEST

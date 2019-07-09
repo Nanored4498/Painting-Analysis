@@ -57,11 +57,13 @@ void DrawingArea::computeSobel() {
 	else pa_data = PA::applySobel(im, W, H, mask, mag_threshold, size_threshold);
 	PA::save_sobel("sobel.png", pa_data);
 	sobelIm.load("sobel.png");
+	double factor = double(MIN_SOBEL_INTENSITY) / 255.0;
+	auto trans_f = [factor](int col) { return qMin(MIN_SOBEL_INTENSITY-1.0, col*factor); };
 	for(int x = 0; x < W; x++) {
 		for(int y = 0; y < H; y++) {
 			if((sobelIm.pixel(x, y) & 0xffffff) == 0) {
 				QColor col = image0.pixelColor(x, y);
-				sobelIm.setPixelColor(x, y, QColor(qMin(63, col.red()/4), qMin(63, col.green()/4), qMin(63, col.blue()/4)));
+				sobelIm.setPixelColor(x, y, QColor(trans_f(col.red()), trans_f(col.green()), trans_f(col.blue())));
 			}
 		}
 	}
