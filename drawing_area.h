@@ -9,8 +9,9 @@
 
 #include <drawing_elements.h>
 
-#define NBLINES0 20
+#define NBLINES 20
 #define RBRUSH0 10
+#define THRESHOLD0 6.7
 
 #define UNSELECTED 0
 #define VANISH_POINT 1
@@ -38,7 +39,7 @@ public slots:
 	void computeSobel();
 	void selectionAction();
 	void selectPlot(int original);
-	void changeNbLines(int n);
+	void changeThreshold(int t);
 	void changeRBrush(int r);
 
 protected:
@@ -70,6 +71,7 @@ private:
 	std::vector<DPoint> zonePoints;
 
 	PA::ProblemData *pa_data = nullptr;
+	double threshold_sobel = THRESHOLD0;
 	QImage sobelIm;
 	bool plotOriginal = true;
 
@@ -82,7 +84,6 @@ private:
 
 	int action = 0;
 
-	unsigned int nbLines = NBLINES0;
 	std::vector<DLine> candidate_lines;
 	std::vector<DLine*> lines;
 	std::vector<DPoint> vanishPoints;

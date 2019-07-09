@@ -6,7 +6,7 @@ class LabeledSlider: public QWidget {
 Q_OBJECT
 
 public:
-	LabeledSlider(const QString &title, int min, int max, int val0=-1);
+	LabeledSlider(const QString &title, int min, int max, int val0=-1, double fact=1.0);
 	~LabeledSlider();
 
 signals:
@@ -19,4 +19,6 @@ private:
 	QString title;
 	QSlider *slider;
 	QLabel *label;
+
+	double fact=1.0;
 };

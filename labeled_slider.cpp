@@ -2,8 +2,8 @@
 
 #include <QVBoxLayout>
 
-LabeledSlider::LabeledSlider(const QString &title, int min, int max, int val0):
-	title(title), QWidget() {
+LabeledSlider::LabeledSlider(const QString &title, int min, int max, int val0, double p_fact):
+	title(title), fact(p_fact), QWidget() {
 	
 	QVBoxLayout *layout = new QVBoxLayout();
 	layout->setContentsMargins(0, 0, 0, 0);
@@ -14,7 +14,7 @@ LabeledSlider::LabeledSlider(const QString &title, int min, int max, int val0):
 	max = qMax(min, max);
 	val0 = qMin(max, qMax(min, val0));
 
-	label = new QLabel(title + " (" + QString::number(val0) + ")");
+	label = new QLabel(title + " (" + QString::number(val0*fact) + ")");
 	layout->addWidget(label);
 	
 	slider = new QSlider(Qt::Orientation::Horizontal);
@@ -30,6 +30,6 @@ LabeledSlider::~LabeledSlider() {
 }
 
 void LabeledSlider::changeValue(int v) {
-	label->setText(title + " (" + QString::number(v) + ")");
+	label->setText(title + " (" + QString::number(v*fact) + ")");
 	emit valueChanged(v);
 }

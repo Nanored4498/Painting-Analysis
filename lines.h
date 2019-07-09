@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <vector>
+#include "color.h"
 
 #define MODE_PI
 #define NUM_PASS 6
@@ -37,18 +38,27 @@ struct Line {
 struct ProblemData {
 	int W, H;
 	double *no, *an;
+	Color *bil;
 	double m;
 
-	ProblemData(int W, int H, double *no, double *an, double m):
-		W(W), H(H), no(no), an(an), m(m) {}
+	ProblemData(int W, int H, double *no, double *an, Color *bil, double m):
+		W(W), H(H), no(no), an(an), bil(bil), m(m) {}
 
 	~ProblemData() {
-		delete [] no;
-		delete [] an;
+		delete[] no;
+		delete[] an;
+		delete[] bil;
 	}
 };
 
-ProblemData* applySobel(uchar* im, int W, int H, bool *mask=nullptr);
+ProblemData* applySobel(uchar* im, int W, int H,
+						bool *mask=nullptr,
+						double threshold=6.7,
+						double size_threshold=7.5);
+ProblemData* applySobelToBil(Color* im, int W, int H,
+						bool *mask=nullptr,
+						double threshold=6.7,
+						double size_threshold=7.5);
 uint pixelColor(int x, int y, PA::ProblemData *data);
 void save_sobel(const char *filename, PA::ProblemData *data);
 std::vector<Line> get_lines(ProblemData *data);

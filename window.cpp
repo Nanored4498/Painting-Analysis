@@ -76,9 +76,9 @@ Window::Window(): QMainWindow() {
 	slidW->setLayout(sliLayout);
 	layout->addWidget(slidW);
 
-	nLinesSli = new LabeledSlider("Number of lines", 5, 40, NBLINES0);
-	sliLayout->addWidget(nLinesSli);
-	connect(nLinesSli, SIGNAL(valueChanged(int)), area, SLOT(changeNbLines(int)));
+	thresholdSli = new LabeledSlider("Sobel Threshold", 30, 89, 10*THRESHOLD0, 0.1);
+	sliLayout->addWidget(thresholdSli);
+	connect(thresholdSli, SIGNAL(valueChanged(int)), area, SLOT(changeThreshold(int)));
 
 	rBrushSli = new LabeledSlider("Brush radius", 6, 35, RBRUSH0);
 	sliLayout->addWidget(rBrushSli);
@@ -147,6 +147,6 @@ Window::~Window() {
 	delete sobelBut;
 	delete plotedImageBut;
 
-	delete nLinesSli;
+	delete thresholdSli;
 	delete rBrushSli;
 }

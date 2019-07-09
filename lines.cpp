@@ -3,7 +3,6 @@
 #include <map>
 #include <algorithm>
 #include "stb_image_write.h"
-#include "color.h"
 #include <chrono>
 
 #define uchar unsigned char
@@ -204,7 +203,45 @@ void clean(double *n, int W, int H, double threshold, unsigned int min_size) {
 		if(u.w[u.find(i)] < min_size) n[i] = 0;
 }
 
-PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask) {
+PA::ProblemData* PA::applySobelToBil(Color* im, int W, int H, bool *mask, double threshold, double size_threshold) {
+	auto time = std::chrono::high_resolution_clock::now();
+	double diag = std::sqrt(W*W + H*H);
+	double sigma_col = 250.0 / pow(diag, 0.4);
+	int num_smooth_pass = 0.06 * std::pow(diag, 0.6);
+	double *no, *an;
+	
+	double m = sobel(im, no, an, W, H, mask);
+	auto time2 = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> dtime = time2 - time;
+	std::cerr << "Sobel filter: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
+	clean(no, W, H, 0.001*threshold*sigma_col*m, 0.01*size_threshold*diag);
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Cleaning: " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
+	double *an2 = new double[W*H];
+	for(int i = 0; i < num_smooth_pass; i++) {
+		smooth_sep(no, an, W, H, an2, m);
+		std::swap(an, an2);
+	}
+	delete[] an2;
+	time2 = std::chrono::high_resolution_clock::now();
+	dtime = time2 - time;
+	std::cerr << "Smoothing (" << num_smooth_pass << "): " << dtime.count() << std::endl;
+	time = std::chrono::high_resolution_clock::now();
+
+	#ifdef MODE_PI
+	for(int i = 0; i < W*H; i++)
+		if(an[i] < 0) an[i] += M_PI;
+	#endif
+
+	return new PA::ProblemData(W, H, no, an, im, m);
+}
+
+PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask, double threshold, double size_threshold) {
 	double diag = std::sqrt(W*W + H*H);
 	double sigma = std::pow(diag, 0.3) * 0.3;
 	double sigma_col = 250.0 / pow(diag, 0.4);
@@ -238,37 +275,7 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask) {
 	// std::cerr << "Lab to RGB and saving: " << dtime.count() << std::endl;
 	// time = std::chrono::high_resolution_clock::now();
 
-	int num_smooth_pass = 0.06 * std::pow(diag, 0.6);
-	double *no, *an;
-	double m = sobel(im2, no, an, W, H, mask);
-	time2 = std::chrono::high_resolution_clock::now();
-	dtime = time2 - time;
-	std::cerr << "Sobel filter: " << dtime.count() << std::endl;
-	time = std::chrono::high_resolution_clock::now();
-
-	clean(no, W, H, 0.0067*sigma_col*m, 0.075*diag);
-	time2 = std::chrono::high_resolution_clock::now();
-	dtime = time2 - time;
-	std::cerr << "Cleaning: " << dtime.count() << std::endl;
-	time = std::chrono::high_resolution_clock::now();
-
-	double *an2 = new double[W*H];
-	for(int i = 0; i < num_smooth_pass; i++) {
-		smooth_sep(no, an, W, H, an2, m);
-		std::swap(an, an2);
-	}
-	delete[] an2;
-	time2 = std::chrono::high_resolution_clock::now();
-	dtime = time2 - time;
-	std::cerr << "Smoothing (" << num_smooth_pass << "): " << dtime.count() << std::endl;
-	time = std::chrono::high_resolution_clock::now();
-
-	#ifdef MODE_PI
-	for(int i = 0; i < W*H; i++)
-		if(an[i] < 0) an[i] += M_PI;
-	#endif
-
-	return new PA::ProblemData(W, H, no, an, m);
+	return applySobelToBil(im2, W, H, mask, threshold);
 }
 
 #define TEST

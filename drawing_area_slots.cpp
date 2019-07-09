@@ -11,7 +11,7 @@ void DrawingArea::findLines() {
 	lines.clear();
 	vanishPoints.clear();
 	unsigned int i = 0;
-	while(i < candidate_lines.size() && i < nbLines) {
+	while(i < candidate_lines.size() && i < NBLINES) {
 		candidate_lines[i].setGroup(0);
 		lines.push_back(&candidate_lines[i++]);
 	}
@@ -31,7 +31,6 @@ bool pred_inside(double x, double y, const DPoint &p0, const DPoint &p1) {
 void DrawingArea::computeSobel() {
 	if(!im) return;
 	// Cleaning
-	if(pa_data) delete pa_data;
 	candidate_lines.clear();
 	lines.clear();
 	vanishPoints.clear();
@@ -54,7 +53,8 @@ void DrawingArea::computeSobel() {
 		}
 	}
 	// Computing Sobel
-	pa_data = PA::applySobel(im, W, H, mask);
+	if(pa_data) pa_data = PA::applySobelToBil(pa_data->bil, W, H, mask, threshold_sobel);
+	else pa_data = PA::applySobel(im, W, H, mask, threshold_sobel);
 	PA::save_sobel("sobel.png", pa_data);
 	sobelIm.load("sobel.png");
 	for(int x = 0; x < W; x++) {
@@ -184,8 +184,8 @@ void DrawingArea::selectPlot(int original) {
 	resize();
 }
 
-void DrawingArea::changeNbLines(int n) {
-	nbLines = n;
+void DrawingArea::changeThreshold(int t) {
+	threshold_sobel = 0.1 * t;
 }
 
 void DrawingArea::changeRBrush(int r) {
