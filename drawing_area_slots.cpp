@@ -34,6 +34,8 @@ void DrawingArea::computeSobel() {
 	candidate_lines.clear();
 	lines.clear();
 	vanishPoints.clear();
+	if(horizontalLine) delete horizontalLine;
+	horizontalLine = nullptr;
 	// Computing mask
 	int W = image0.width(), H = image0.height();
 	bool *mask = new bool[W*H];

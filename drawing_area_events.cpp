@@ -118,7 +118,6 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 		update();
 	/*** Add line or select Sobel zone ***/
 	} else if(plotOriginal && event->button() == Qt::RightButton) {
-		double s = scale * scale_im;
 		/*** Select Soble Zone ***/
 		if(pa_data == nullptr) {
 			if(px < 0.015 * width()) px = 0;
@@ -126,37 +125,14 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 			if(px > 0.985 * width()) px = width();
 			if(py > 0.985 * height()) py = height();
 			double dx = (width() - scale_im*image0.width())/2.0 , dy = (height() - scale_im*image0.height())/2.0;
+			double s = scale * scale_im;
 			zonePoints.emplace_back(sx + (px - dx) / s, sy + (py - dy) / s);
 			resizeLines();
 			update();
 			return;
 		}
 		/*** Add line ****/
-		unsigned int previous_size = lines.size();
-		for(int i = 0; i < (int) lines.size(); i++) {
-			if(lines[i]->get_dist(px, py) < 4) {
-				lines[i]->setGroup(-1);
-				lines[i] = lines.back();
-				lines.pop_back();
-				i--;
-			}
-		}
-		if(lines.size() < previous_size) {
-			update();
-			return;
-		}
-		QPoint dp((width() - scale_im*image0.width())/2.0, (height() - scale_im*image0.height())/2.0);
-		QPoint sp(sx, sy);
-		for(DLine &l : candidate_lines) {
-			if(l.get_group() >= 0) continue;
-			l.update(s, sp, dp);
-			if(l.get_dist(px, py) < 4) {
-				l.setGroup(0);
-				lines.push_back(&l);
-				update();
-				break;
-			}
-		}
+		press_sx = px, press_sy = py;
 	/*** Brush or move camera ***/
 	} else if(event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) {
 		if(px < im_x || px >= im_x+image.width() || py < im_y || py >= im_y+image.height()) return;
@@ -173,7 +149,39 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 
 void DrawingArea::mouseReleaseEvent(QMouseEvent *event) {
 	if(event->button() == Qt::MiddleButton) MidButPressed = false;
-	else if(event->button() == Qt::RightButton) rightButPressed = false;
+	else if(event->button() == Qt::RightButton) {
+		rightButPressed = false;
+		if(plotOriginal && pa_data != nullptr) {
+			double px = event->pos().x();
+			double py = event->pos().y();
+			double s = scale * scale_im;
+			unsigned int previous_size = lines.size();
+			for(int i = 0; i < (int) lines.size(); i++) {
+				if(lines[i]->get_dist(px, py) + lines[i]->get_dist(press_sx, press_sy) < 8) {
+					lines[i]->setGroup(-1);
+					lines[i] = lines.back();
+					lines.pop_back();
+					i--;
+				}
+			}
+			if(lines.size() < previous_size) {
+				update();
+				return;
+			}
+			QPoint dp((width() - scale_im*image0.width())/2.0, (height() - scale_im*image0.height())/2.0);
+			QPoint sp(sx, sy);
+			for(DLine &l : candidate_lines) {
+				if(l.get_group() >= 0) continue;
+				l.update(s, sp, dp);
+				if(l.get_dist(px, py) + l.get_dist(press_sx, press_sy) < 8) {
+					l.setGroup(0);
+					lines.push_back(&l);
+					update();
+					break;
+				}
+			}
+		}
+	}
 }
 
 void DrawingArea::mouseMoveEvent(QMouseEvent *event) {
