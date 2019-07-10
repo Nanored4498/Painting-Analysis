@@ -335,23 +335,28 @@ PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 	return PA::Line(a, b);
 }
 
-std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
+std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<int, int>> &zone) {
+	// Time
 	auto time = std::chrono::high_resolution_clock::now();
 
+	// Important variables
 	double W = data->W, H = data->H;
 	double diag = std::sqrt(W*W + H*H);
 	int R = 1.96 * std::pow(diag, 0.8);
 	int T = 13.3 * std::pow(diag, 0.5);
-	double *res = new double[R*T];
-	for(int i = 0; i < R*T; i++) res[i] = 0;
 	double r_step = diag / R;
 	double t_step = 1.5 * M_PI / T;
+	// Array of the Hough Transform
+	double *res = new double[R*T];
+	for(int i = 0; i < R*T; i++) res[i] = 0;
+
+	// Compute the Hough Transform
 	for(int x = 0; x < W; x++) {
 		for(int y = 0; y < H; y++) {
 			int pix = x + y*W;
-			if(data->no[pix] < 0.005*data->m) continue;
+			if(data->no[pix] < 0.001*data->m) continue;
 			double ttm = std::atan2(y, x);
-			double tt0 = -0.5*M_PI + (std::floor(ttm / t_step) + 0.5) * t_step;
+			double tt0 = (std::floor(ttm / t_step) + 0.5) * t_step - 0.5*M_PI;
 			double tt1 = ttm + 0.5*M_PI;
 			for(double tt = tt0; tt <= tt1; tt += t_step) {
 				double diff_angle = std::abs(std::sin(tt - data->an[pix]));
@@ -373,19 +378,74 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data) {
 			}
 		}
 	}
+	// Printing time
 	auto time2 = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> dtime = time2 - time;
 	std::cerr << "Hough transform: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
+	// Variables containing lines sorted by decreasing score
 	std::vector<int> lines;
 	for(int i = 0; i < R*T; i++) lines.push_back(i);
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
+	lines.resize(std::min(lines.size(), size_t(500 * std::pow(diag, 0.5))));
+	int size_lines = lines.size();
 	std::vector<PA::Line> ls;
 	std::vector<int> indices;
-	unsigned int i = 0;
+
+	// Readjust score
+	std::vector<double> cross_dis;
+	std::vector<std::pair<int, int>> ps;
+	int zs = zone.size();
+	for(int i : lines) {
+		double r = (i % R + 0.5) * r_step, t = (int(i / R) + 0.5) * t_step;
+		double c = std::cos(t), s = std::sin(t);
+		ps.clear();
+		if(zs < 4) {
+			double hs = H*s, wc = W*c;
+			double hw = hs+wc;
+			if(hs >= r) {
+				ps.emplace_back(0, r/s);
+				if(hw < r) ps.emplace_back((r - hs)/c, H);
+			} else if(hw >= r) ps.emplace_back((r - hs)/c, H);
+			if(wc >= r) {
+				ps.emplace_back(r/c, 0);
+				if(hw < r) ps.emplace_back(W, (r - wc)/s);
+			} else if(hw >= r) ps.emplace_back(W, (r - wc)/s);
+		} else {
+			for(int i = 1; i < zs; i++) {
+				double r0 = zone[i-1].first*c + zone[i-1].second*s;
+				double r1 = zone[i].first*c + zone[i].second*s;
+				double t = (r - r0) / (r1 - r0);
+				if(t <= 0 && t <= 1)
+					ps.emplace_back(zone[i].first*t + zone[i-1].first*(1-t), zone[i].second*t + zone[i-1].second*(1-t));
+			}
+		}
+		std::sort(ps.begin(), ps.end());
+		double dis = 0;
+		int pss = ps.size();
+		for(int i = 1; i < pss; i += 2) {
+			double dx = ps[i].first - ps[i-1].first, dy = ps[i].second - ps[i-1].second;
+			dis += std::sqrt(dx*dx + dy*dy);
+		}
+		cross_dis.push_back(dis);
+	}
+	double max_d = *std::max_element(cross_dis.begin(), cross_dis.end());
+	int x0, y0, x1, y1;
+	if(zs < 4) x0 = 0, y0 = 0, x1 = W, y1 = H;
+	else {
+		x0 = W, x1 = 0, y0 = H, y1 = 0;
+		for(const auto p : zone)
+			x0 = std::min(x0, p.first), x1 = std::max(x1, p.first), y0 = std::min(y0, p.second), y1 = std::max(y1, p.second);
+	}
+	double cons = std::max(0.0, 1.0 - 2.0 * std::abs(x1 - x0 - y1 + y0) / double(x1 - x0 + y1 - y0));
+	for(int i = 0; i < size_lines; i++) res[lines[i]] /= (cons + cross_dis[i] / max_d);
+	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
+
+	// Removing and merging close lines
+	int i = 0;
 	double lim_dist = 0.01 * diag;
-	while(ls.size() < 200 && i < lines.size()) {
+	while(ls.size() < 200 && i < size_lines) {
 		bool add = true;
 		int ind = lines[i];
 		int ri = ind % R;

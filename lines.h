@@ -61,9 +61,11 @@ ProblemData* applySobelToBil(Color* im, int W, int H,
 						bool *mask=nullptr,
 						double threshold=6.7,
 						double size_threshold=7.5);
+
 uint pixelColor(int x, int y, PA::ProblemData *data);
 void save_sobel(const char *filename, PA::ProblemData *data);
-std::vector<Line> get_lines(ProblemData *data);
+
+std::vector<Line> get_lines(ProblemData *data, const std::vector<std::pair<int, int>> &zone);
 
 }
 

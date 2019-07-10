@@ -2,24 +2,6 @@
 
 #include <set>
 
-void DrawingArea::findLines() {
-	int W = image0.width(), H = image0.height();
-	candidate_lines.clear();
-	std::vector<PA::Line> ls = PA::get_lines(pa_data);
-	for(const PA::Line &l : ls)
-		candidate_lines.emplace_back(l, W, H);
-	lines.clear();
-	vanishPoints.clear();
-	unsigned int i = 0;
-	while(i < candidate_lines.size() && i < NBLINES) {
-		candidate_lines[i].setGroup(0);
-		lines.push_back(&candidate_lines[i++]);
-	}
-	computeHorizon();
-	resizeLines();
-	update();
-}
-
 bool pred_inside(double x, double y, const DPoint &p0, const DPoint &p1) {
 	const QPoint &q0 = p0.get_point0();
 	const QPoint &q1 = p1.get_point0();
@@ -70,6 +52,28 @@ void DrawingArea::computeSobel() {
 		}
 	}
 	emit sobelComputed();
+	update();
+
+}
+
+void DrawingArea::findLines() {
+	int W = image0.width(), H = image0.height();
+	candidate_lines.clear();
+	std::vector<std::pair<int, int>> zone2;
+	for(const DPoint &p : zonePoints) zone2.emplace_back(p.get_point0().x(), p.get_point0().y());
+	if(!zone2.empty()) zone2.push_back(zone2[0]);
+	std::vector<PA::Line> ls = PA::get_lines(pa_data, zone2);
+	for(const PA::Line &l : ls)
+		candidate_lines.emplace_back(l, W, H);
+	lines.clear();
+	vanishPoints.clear();
+	unsigned int i = 0;
+	while(i < candidate_lines.size() && i < NBLINES) {
+		candidate_lines[i].setGroup(0);
+		lines.push_back(&candidate_lines[i++]);
+	}
+	computeHorizon();
+	resizeLines();
 	update();
 }
 
