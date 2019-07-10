@@ -207,7 +207,7 @@ PA::ProblemData* PA::applySobelToBil(Color* im, int W, int H, bool *mask, double
 	auto time = std::chrono::high_resolution_clock::now();
 	double diag = std::sqrt(W*W + H*H);
 	double sigma_col = 250.0 / pow(diag, 0.4);
-	int num_smooth_pass = 0.06 * std::pow(diag, 0.6);
+	int num_smooth_pass = 0.05 * std::pow(diag, 0.63);
 	double *no, *an;
 	
 	double m = sobel(im, no, an, W, H, mask);
@@ -335,6 +335,37 @@ PA::Line pca(std::vector<int> &ps, double *no, double *an, int W) {
 	return PA::Line(a, b);
 }
 
+void add_intersections(double r, double c, double s, int W, int H,
+						const std::vector<std::pair<int, int>> &zone,
+						std::vector<std::pair<int, int>> &ps) {
+	int zs = zone.size();
+	double hs = H*s, wc = W*c;
+	ps.clear();
+	if(zs < 4) {
+		double hw = hs+wc;
+		if(hs >= r) {
+			ps.emplace_back(0, r/s);
+			if(hw < r) ps.emplace_back((r - hs)/c, H);
+		} else if(hw >= r) ps.emplace_back((r - hs)/c, H);
+		if(wc >= r) {
+			ps.emplace_back(r/c, 0);
+			if(hw < r) ps.emplace_back(W, (r - wc)/s);
+		} else if(hw >= r) ps.emplace_back(W, (r - wc)/s);
+	} else {
+		for(int i = 1; i < zs; i++) {
+			double r0 = zone[i-1].first*c + zone[i-1].second*s;
+			double r1 = zone[i].first*c + zone[i].second*s;
+			double t = (r - r0) / (r1 - r0);
+			if(0 <= t && t <= 1) {
+				int x = zone[i].first*t + zone[i-1].first*(1-t);
+				int y = zone[i].second*t + zone[i-1].second*(1-t);
+				ps.emplace_back(x, y);
+			}
+		}
+	}
+	std::sort(ps.begin(), ps.end());
+}
+
 std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<int, int>> &zone) {
 	// Time
 	auto time = std::chrono::high_resolution_clock::now();
@@ -384,11 +415,24 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 	std::cerr << "Hough transform: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
+	// Constante for the importance of the readjusment
+	int x0, y0, x1, y1;
+	if(zone.size() < 4) x0 = 0, y0 = 0, x1 = W, y1 = H;
+	else {
+		x0 = W, x1 = 0, y0 = H, y1 = 0;
+		for(const auto p : zone)
+			x0 = std::min(x0, p.first), x1 = std::max(x1, p.first), y0 = std::min(y0, p.second), y1 = std::max(y1, p.second);
+	}
+	double w2 = x1-x0, h2 = y1-y0;
+	double norm = std::sqrt(w2*w2 + h2*h2);
+	w2 /= norm, h2 /= norm;
+	double cons = std::max(0.2, 1.25 - 1.4 * std::abs(w2 - h2) / double(w2 + h2));
+
 	// Variables containing lines sorted by decreasing score
 	std::vector<int> lines;
 	for(int i = 0; i < R*T; i++) lines.push_back(i);
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
-	lines.resize(std::min(lines.size(), size_t(500 * std::pow(diag, 0.5))));
+	lines.resize(std::min(lines.size(), size_t(750 * std::pow(diag, 0.8))));
 	int size_lines = lines.size();
 	std::vector<PA::Line> ls;
 	std::vector<int> indices;
@@ -396,32 +440,10 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 	// Readjust score
 	std::vector<double> cross_dis;
 	std::vector<std::pair<int, int>> ps;
-	int zs = zone.size();
 	for(int i : lines) {
-		double r = (i % R + 0.5) * r_step, t = (int(i / R) + 0.5) * t_step;
+		double r = (i % R + 0.5) * r_step, t = (int(i / R) + 0.5) * t_step - M_PI/2.0;
 		double c = std::cos(t), s = std::sin(t);
-		ps.clear();
-		if(zs < 4) {
-			double hs = H*s, wc = W*c;
-			double hw = hs+wc;
-			if(hs >= r) {
-				ps.emplace_back(0, r/s);
-				if(hw < r) ps.emplace_back((r - hs)/c, H);
-			} else if(hw >= r) ps.emplace_back((r - hs)/c, H);
-			if(wc >= r) {
-				ps.emplace_back(r/c, 0);
-				if(hw < r) ps.emplace_back(W, (r - wc)/s);
-			} else if(hw >= r) ps.emplace_back(W, (r - wc)/s);
-		} else {
-			for(int i = 1; i < zs; i++) {
-				double r0 = zone[i-1].first*c + zone[i-1].second*s;
-				double r1 = zone[i].first*c + zone[i].second*s;
-				double t = (r - r0) / (r1 - r0);
-				if(t <= 0 && t <= 1)
-					ps.emplace_back(zone[i].first*t + zone[i-1].first*(1-t), zone[i].second*t + zone[i-1].second*(1-t));
-			}
-		}
-		std::sort(ps.begin(), ps.end());
+		add_intersections(r, c, s, W, H, zone, ps);
 		double dis = 0;
 		int pss = ps.size();
 		for(int i = 1; i < pss; i += 2) {
@@ -431,20 +453,12 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 		cross_dis.push_back(dis);
 	}
 	double max_d = *std::max_element(cross_dis.begin(), cross_dis.end());
-	int x0, y0, x1, y1;
-	if(zs < 4) x0 = 0, y0 = 0, x1 = W, y1 = H;
-	else {
-		x0 = W, x1 = 0, y0 = H, y1 = 0;
-		for(const auto p : zone)
-			x0 = std::min(x0, p.first), x1 = std::max(x1, p.first), y0 = std::min(y0, p.second), y1 = std::max(y1, p.second);
-	}
-	double cons = std::max(0.0, 1.0 - 2.0 * std::abs(x1 - x0 - y1 + y0) / double(x1 - x0 + y1 - y0));
 	for(int i = 0; i < size_lines; i++) res[lines[i]] /= (cons + cross_dis[i] / max_d);
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
 
 	// Removing and merging close lines
 	int i = 0;
-	double lim_dist = 0.01 * diag;
+	double lim_dist = 0.0142 * diag;
 	while(ls.size() < 200 && i < size_lines) {
 		bool add = true;
 		int ind = lines[i];
@@ -475,23 +489,22 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 		double r = (ri + r_add + 0.5) * r_step;
 		double t = (ti + t_add + 0.5) * t_step - M_PI/2;
 		double c = std::cos(t), s = std::sin(t);
-		double x0 = 0, y0 = r/s, x1 = W, y1 = (r - c*W)/s;
-		if(y0 > H) x0 = (r - s*H)/c, y0 = H;
-		else if(y0 < 0) x0 = r/c, y0 = 0;
-		if(y1 > H) x1 = (r - s*H)/c, y1 = H;
-		else if(y1 < 0) x1 = r/c, y1 = 0;
+		add_intersections(r, c, s, W, H, zone, ps);
+		double x0 = ps[0].first, y0 = ps[0].second;
+		double x1 = ps.back().first, y1 = ps.back().second;
+		double lim_dist2 = (0.35 + std::abs(c*w2) + std::abs(s*h2)) / 1.35 * lim_dist;
 		std::vector<int>::iterator ind_it = indices.begin();
 		for(PA::Line &l : ls) {
-			if(std::abs(t - l.theta) > 0.6) continue;
+			if(std::abs(t - l.theta) > 0.42) continue;
 			double co = std::cos(l.theta), si = std::sin(l.theta);
 			double d0 = co * x0 + si * y0 - l.rho;
 			double d1 = co * x1 + si * y1 - l.rho;
 			bool cross = (d0 < 0) != (d1 < 0);
 			double dm = cross ? (d0*d0 + d1*d1) / 2.0 / std::abs(d0 - d1) : std::abs(d0 + d1) / 2.0;
-			if(dm < lim_dist) {
+			if(dm < lim_dist2) {
 				add = false;
-				if(dm > 0.4*lim_dist) break;
-				double alpha = (0.67 - dm / 0.6 / lim_dist) * res[ind] / (res[ind] + res[*ind_it]);
+				if(dm > 0.25*lim_dist2) break;
+				double alpha = 66e3*cons/std::pow(diag, 1.66) * (1.0 - dm / (0.25*lim_dist2)) * res[ind] / (res[ind] + res[*ind_it]);
 				res[*ind_it] += res[ind];
 				l.set((1 - alpha) * l.rho + alpha * r, (1 - alpha) * l.theta + alpha * t, true);
 				break;
@@ -531,5 +544,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 	time2 = std::chrono::high_resolution_clock::now();
 	dtime = time2 - time;
 	std::cerr << "Finding lines: " << dtime.count() << std::endl;
+
+	std::cerr << ls.size() << std::endl;
 	return ls;
 }

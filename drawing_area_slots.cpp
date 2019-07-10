@@ -60,8 +60,38 @@ void DrawingArea::findLines() {
 	int W = image0.width(), H = image0.height();
 	candidate_lines.clear();
 	std::vector<std::pair<int, int>> zone2;
-	for(const DPoint &p : zonePoints) zone2.emplace_back(p.get_point0().x(), p.get_point0().y());
-	if(!zone2.empty()) zone2.push_back(zone2[0]);
+	if(!zonePoints.empty()) zonePoints.push_back(zonePoints[0]);
+	int zps = zonePoints.size();
+	for(int i = 1; i < zps; i++) {
+		int x0 = zonePoints[i-1].get_point0().x(), y0 = zonePoints[i-1].get_point0().y();
+		int x1 = zonePoints[i].get_point0().x(), y1 = zonePoints[i].get_point0().y();
+		if((x0 > 0) != (x1 > 0)) {
+			double t = - x0 / double(x1 - x0);
+			int y = qMax(0.0, qMin(double(H), t * y1 + (1-t) * y0));
+			zone2.emplace_back(0, y);
+		}
+		if((x0 > W) != (x1 > W)) {
+			double t = (W - x0) / double(x1 - x0);
+			int y = qMax(0.0, qMin(double(H), t * y1 + (1-t) * y0));
+			zone2.emplace_back(W, y);
+		}
+		if((y0 > 0) != (y1 > 0)) {
+			double t = - y0 / double(y1 - y0);
+			int x = qMax(0.0, qMin(double(W), t * x1 + (1-t) * x0));
+			zone2.emplace_back(x, 0);
+		}
+		if((y0 > H) != (y1 > H)) {
+			double t = - y0 / double(y1 - y0);
+			int x = qMax(0.0, qMin(double(W), t * x1 + (1-t) * x0));
+			zone2.emplace_back(x, H);
+		}
+		if(sobelIm.rect().contains(x1, y1)) zone2.emplace_back(x1, y1);
+	}
+	if(!zonePoints.empty()) {
+		zonePoints.pop_back();
+		if(!sobelIm.rect().contains(zonePoints[0].get_point0()))
+			zone2.push_back(zone2[0]);
+	}
 	std::vector<PA::Line> ls = PA::get_lines(pa_data, zone2);
 	for(const PA::Line &l : ls)
 		candidate_lines.emplace_back(l, W, H);
