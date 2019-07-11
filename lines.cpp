@@ -374,7 +374,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 	double W = data->W, H = data->H;
 	double diag = std::sqrt(W*W + H*H);
 	int R = 1.96 * std::pow(diag, 0.8);
-	int T = 13.3 * std::pow(diag, 0.5);
+	int T = 13.5 * std::pow(diag, 0.5);
 	double r_step = diag / R;
 	double t_step = 1.5 * M_PI / T;
 	// Array of the Hough Transform
@@ -495,7 +495,8 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 		double lim_dist2 = (0.35 + std::abs(c*w2) + std::abs(s*h2)) / 1.35 * lim_dist;
 		std::vector<int>::iterator ind_it = indices.begin();
 		for(PA::Line &l : ls) {
-			if(std::abs(t - l.theta) > 0.42) continue;
+			int dth = std::abs(t - l.theta);
+			if((dth > 0.42) && !(r < lim_dist && l.rho < lim_dist && std::abs(dth - M_PI) > 0.42)) continue;
 			double co = std::cos(l.theta), si = std::sin(l.theta);
 			double d0 = co * x0 + si * y0 - l.rho;
 			double d1 = co * x1 + si * y1 - l.rho;
@@ -545,6 +546,5 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 	dtime = time2 - time;
 	std::cerr << "Finding lines: " << dtime.count() << std::endl;
 
-	std::cerr << ls.size() << std::endl;
 	return ls;
 }

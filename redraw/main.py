@@ -76,7 +76,7 @@ def main():
 	except FileNotFoundError:
 		print("File not found:", args.filename, file=sys.stderr)
 		exit(1)
-	out = sys.stdout if args.o == None else open(args.o, "w")
+	out = open(args.filename[:-4] + "+.svg", "w") if args.o == None else open(args.o, "w")
 	option_d = args.d
 
 	# Reading the size

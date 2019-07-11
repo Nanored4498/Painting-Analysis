@@ -85,9 +85,9 @@ void DrawingArea::clamp_sxy() {
 }
 
 bool DrawingArea::isSobelPixel(int x, int y) {
-	if(sobelIm.rect().contains(x, y)) return true;
+	if(!sobelIm.rect().contains(x, y)) return false;
 	QRgb col = sobelIm.pixel(x, y);
-	return ((col & 0xc00000) >> 16) + ((col & 0xc000) >> 8) + (col & 0xc0) >= MIN_SOBEL_INTENSITY;
+	return ((col & 0xff0000) >> 16) + ((col & 0xff00) >> 8) + (col & 0xff) >= MIN_SOBEL_INTENSITY;
 }
 
 void DrawingArea::shiftSobelPixel(int x, int y, bool unbrush) {
@@ -109,14 +109,10 @@ void DrawingArea::eraseSobel(double px, double py) {
 	while(dx*dx <= r2) {
 		int dy = 0;
 		while(dx*dx+dy*dy <= r2) {
-			if(sobelIm.rect().contains(ix+dx, iy+dy) && (sobelIm.pixel(ix+dx, iy+dy) & 0xc0c0c0))
-				shiftSobelPixel(ix+dx, iy+dy, unbrush);
-			if(sobelIm.rect().contains(ix-dx, iy+dy) && (sobelIm.pixel(ix-dx, iy+dy) & 0xc0c0c0))
-				shiftSobelPixel(ix-dx, iy+dy, unbrush);
-			if(sobelIm.rect().contains(ix+dx, iy-dy) && (sobelIm.pixel(ix+dx, iy-dy) & 0xc0c0c0))
-				shiftSobelPixel(ix+dx, iy-dy, unbrush);
-			if(sobelIm.rect().contains(ix-dx, iy-dy) && (sobelIm.pixel(ix-dx, iy-dy) & 0xc0c0c0))
-				shiftSobelPixel(ix-dx, iy-dy, unbrush);
+			if(isSobelPixel(ix+dx, iy+dy)) shiftSobelPixel(ix+dx, iy+dy, unbrush);
+			if(isSobelPixel(ix-dx, iy+dy)) shiftSobelPixel(ix-dx, iy+dy, unbrush);
+			if(isSobelPixel(ix+dx, iy-dy)) shiftSobelPixel(ix+dx, iy-dy, unbrush);
+			if(isSobelPixel(ix-dx, iy-dy)) shiftSobelPixel(ix-dx, iy-dy, unbrush);
 			dy ++;
 		}
 		dx ++;
