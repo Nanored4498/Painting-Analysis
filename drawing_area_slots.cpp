@@ -41,8 +41,8 @@ void DrawingArea::computeSobel() {
 	else pa_data = PA::applySobel(im, W, H, mask, mag_threshold, size_threshold);
 	PA::save_sobel("sobel.png", pa_data);
 	sobelIm.load("sobel.png");
-	double factor = double(MIN_SOBEL_INTENSITY) / 255.0;
-	auto trans_f = [factor](int col) { return qMin(MIN_SOBEL_INTENSITY-1.0, col*factor); };
+	double factor = 0.66 * (MIN_SOBEL_INTENSITY-1.0) / 255.0;
+	auto trans_f = [factor](int col) { return col*factor; };
 	for(int x = 0; x < W; x++) {
 		for(int y = 0; y < H; y++) {
 			if((sobelIm.pixel(x, y) & 0xffffff) == 0) {
@@ -139,31 +139,42 @@ void DrawingArea::selectionAction() {
 
 	} else if(action == INTERSECTIONS) {
 
-		std::vector<std::vector<int>> gs;
+		std::map<int, std::vector<int>> gs;
 		std::vector<int> inds;
 		for(int i = 0; i < int(lines.size()); i++) {
 			if(lines[i]->is_selected()) {
 				int g = lines[i]->get_group();
-				while(g >= int(gs.size())) gs.emplace_back();
-				if(gs[g].empty()) inds.push_back(g);
+				if(!gs.count(g)) {
+					inds.push_back(g);
+					gs[g] = {};
+				}
 				gs[g].push_back(i);
 			}
 		}
 		int I = inds.size();
 		for(int i : inds) {
-			double mc = 0, ms = 0;
+			double mc = 0, ms = 0, mr = 0;
 			for(int a : gs[i]) {
 				double t = 2 * lines[a]->getTheta();
 				mc += qCos(t);
 				ms += qSin(t);
+				mr += lines[a]->getRho();
 			}
 			double t = qTan(qAtan2(ms, mc) / 2);
+			mr /= gs[i].size();
 			auto fun = [this, t](int i) {
 				double c, s, r;
 				lines[i]->getCSR(c, s, r);
 				return r / (c + s*t);
 			};
 			std::sort(gs[i].begin(), gs[i].end(), [&fun](int a, int b) { return fun(a) < fun(b); });
+			if(qAbs(t) < 4.5) {
+				auto fun2 = [this](int i) { return (image0.height() - lines[i]->getB()) / lines[i]->getA(); };
+				double x0 = fun2(gs[i][0]);
+				double wb = fun2(gs[i].back()) - x0;
+				auto fun3 = [this, &fun, &fun2, mr, x0, wb](int i) { return fun(i) / mr + (fun2(i) - x0) / wb; };
+				std::sort(gs[i].begin(), gs[i].end(), [&fun3](int a, int b) { return fun3(a) < fun3(b); });
+			}
 		}
 		for(int i = 0; i < I; i++) {
 			for(int j = i+1; j < I; j++) {

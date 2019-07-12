@@ -133,8 +133,8 @@ uint pixelColori(int i, PA::ProblemData *data) {
 	#ifndef MODE_PI
 	t += 0.5;
 	#endif
-	double n = data->no[i] * 255.0 / data->m;
-	if(n > 0) n = (255 - MIN_SOBEL_INTENSITY) * std::pow(n / 255.0, 0.5) + MIN_SOBEL_INTENSITY;
+	double n = data->no[i] / data->m;
+	if(n > 0) n = (255 - MIN_SOBEL_INTENSITY) * std::pow(n, 0.5) + MIN_SOBEL_INTENSITY;
 	uint res = (std::max(0.0, 1-t*3) + std::max(0.0, t*3-2))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-1))*n;
 	res = (res << 8) + std::max(0.0, 1-std::abs(3*t-2))*n;

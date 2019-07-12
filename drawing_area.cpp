@@ -85,9 +85,7 @@ void DrawingArea::clamp_sxy() {
 }
 
 bool DrawingArea::isSobelPixel(int x, int y) {
-	if(!sobelIm.rect().contains(x, y)) return false;
-	QRgb col = sobelIm.pixel(x, y);
-	return ((col & 0xff0000) >> 16) + ((col & 0xff00) >> 8) + (col & 0xff) >= MIN_SOBEL_INTENSITY;
+	return sobelIm.rect().contains(x, y) && qAbs(pa_data->no[x + y*pa_data->W]) > 1e-5;
 }
 
 void DrawingArea::shiftSobelPixel(int x, int y, bool unbrush) {

@@ -158,9 +158,21 @@ void DrawingArea::mouseReleaseEvent(QMouseEvent *event) {
 			unsigned int previous_size = lines.size();
 			for(int i = 0; i < (int) lines.size(); i++) {
 				if(lines[i]->get_dist(px, py) + lines[i]->get_dist(press_sx, press_sy) < 8) {
+					int g = lines[i]->get_group();
 					lines[i]->setGroup(-1);
 					lines[i] = lines.back();
 					lines.pop_back();
+					// If it remains only one line in the group then we delete the group
+					if(g > 0) {
+						int j = -1;
+						for(int k = 0; k < (int) lines.size(); k++) {
+							if(lines[k]->get_group() != g) continue;
+							if(j < 0) j = k;
+							else { j = -1; break; }
+						}
+						if(j >= 0) lines[j]->setGroup(0);
+					}
+					/******************************************************************/
 					i--;
 				}
 			}
