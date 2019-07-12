@@ -88,6 +88,7 @@ private:
 
 	int action = 0;
 
+	PA::LinesData *pa_ldata = nullptr;
 	std::vector<DLine> candidate_lines;
 	std::vector<DLine*> lines;
 	std::vector<DPoint> vanishPoints;

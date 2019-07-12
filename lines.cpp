@@ -366,7 +366,7 @@ void add_intersections(double r, double c, double s, int W, int H,
 	std::sort(ps.begin(), ps.end());
 }
 
-std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<int, int>> &zone) {
+PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<int, int>> &zone) {
 	// Time
 	auto time = std::chrono::high_resolution_clock::now();
 
@@ -453,7 +453,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 		cross_dis.push_back(dis);
 	}
 	double max_d = *std::max_element(cross_dis.begin(), cross_dis.end());
-	for(int i = 0; i < size_lines; i++) res[lines[i]] /= (cons + cross_dis[i] / max_d);
+	for(int i = 0; i < size_lines; i++) res[lines[i]] *= 2.0 / (cons + cross_dis[i] / max_d);
 	std::sort(lines.begin(), lines.end(), [&res](int a, int b) { return res[a] > res[b]; });
 
 	// Removing and merging close lines
@@ -505,7 +505,7 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 			if(dm < lim_dist2) {
 				add = false;
 				if(dm > 0.25*lim_dist2) break;
-				double alpha = 66e3*cons/std::pow(diag, 1.66) * (1.0 - dm / (0.25*lim_dist2)) * res[ind] / (res[ind] + res[*ind_it]);
+				double alpha = 50e3*cons/std::pow(diag, 1.67) * (1.0 - dm / (0.25*lim_dist2)) * res[ind] / (res[ind] + res[*ind_it]);
 				res[*ind_it] += res[ind];
 				l.set((1 - alpha) * l.rho + alpha * r, (1 - alpha) * l.theta + alpha * t, true);
 				break;
@@ -546,5 +546,5 @@ std::vector<PA::Line> PA::get_lines(PA::ProblemData* data, const std::vector<std
 	dtime = time2 - time;
 	std::cerr << "Finding lines: " << dtime.count() << std::endl;
 
-	return ls;
+	return new PA::LinesData(R, T, res, ls);
 }

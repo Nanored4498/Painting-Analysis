@@ -67,6 +67,31 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 	double py = event->pos().y();
 	/*** Select a line ***/
 	if(event->button() == Qt::LeftButton) {
+		if(QApplication::keyboardModifiers() & Qt::ControlModifier) {
+			if(!pa_ldata) return;
+			double dx = (width() - scale_im*image0.width())/2.0 , dy = (height() - scale_im*image0.height())/2.0;
+			double s = scale * scale_im;
+			double x0 = sx + (px - dx) / s, y0 = sy + (py - dy) / s;
+			std::vector<std::pair<double, std::pair<double, double>>> goods;
+			for(int t = 0; t < pa_ldata->T; t++) {
+				double tt = 1.5 * M_PI * (t+0.5) / pa_ldata->T - 0.5 * M_PI;
+				double c = qCos(tt), s = qSin(tt);
+				double rr = x0 * c + y0 * s;
+				int r = rr / qSqrt(image0.width()*image0.width() + image0.height()*image0.height()) * pa_ldata->R;
+				if(r < 0 || r >= pa_ldata->R) continue;
+				qInfo("%f %f %f", tt, rr, pa_ldata->score[r + pa_ldata->R*t]);
+				goods.push_back({pa_ldata->score[r + pa_ldata->R*t], {tt, rr}});
+			}
+			std::sort(goods.begin(), goods.end());
+			for(int i = 0; i < qMin(20, (int) goods.size()); i++) {
+				double tt = goods[i].second.first, rr = goods[i].second.second;
+				DLine *l = new DLine(PA::Line(rr, tt, true), pa_data->W, pa_data->H);
+				l->setGroup(42);
+				lines.push_back(l);
+			}
+			update();
+			return;
+		}
 		// If shift is not pressed, unselect all elements already selected
 		if(!(QApplication::keyboardModifiers() & Qt::ShiftModifier)) {
 			for(DPoint &p : vanishPoints) p.unselect();

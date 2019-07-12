@@ -53,6 +53,19 @@ struct ProblemData {
 	}
 };
 
+struct LinesData {
+	int R, T;
+	double *score;
+	std::vector<Line> lines;
+
+	LinesData(int R, int T, double *score, std::vector<Line> lines):
+		R(R), T(T), score(score), lines(lines) {}
+
+	~LinesData() {
+		delete[] score;
+	}
+};
+
 ProblemData* applySobel(uchar* im, int W, int H,
 						bool *mask=nullptr,
 						double threshold=6.7,
@@ -65,7 +78,7 @@ ProblemData* applySobelToBil(Color* im, int W, int H,
 uint pixelColor(int x, int y, PA::ProblemData *data);
 void save_sobel(const char *filename, PA::ProblemData *data);
 
-std::vector<Line> get_lines(ProblemData *data, const std::vector<std::pair<int, int>> &zone);
+LinesData* get_lines(ProblemData *data, const std::vector<std::pair<int, int>> &zone);
 
 }
 

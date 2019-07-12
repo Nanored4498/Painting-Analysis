@@ -92,8 +92,9 @@ void DrawingArea::findLines() {
 		if(!sobelIm.rect().contains(zonePoints[0].get_point0()))
 			zone2.push_back(zone2[0]);
 	}
-	std::vector<PA::Line> ls = PA::get_lines(pa_data, zone2);
-	for(const PA::Line &l : ls)
+	if(pa_ldata) delete pa_ldata;
+	pa_ldata = PA::get_lines(pa_data, zone2);
+	for(const PA::Line &l : pa_ldata->lines)
 		candidate_lines.emplace_back(l, W, H);
 	lines.clear();
 	vanishPoints.clear();

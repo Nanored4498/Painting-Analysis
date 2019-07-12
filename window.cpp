@@ -76,7 +76,7 @@ Window::Window(): QMainWindow() {
 	slidW->setLayout(sliLayout);
 	layout->addWidget(slidW);
 
-	magThresholdSli = new LabeledSlider("Sobel Magnitude Threshold", 30, 89, 10*MAG_THRESHOLD0, 0.1);
+	magThresholdSli = new LabeledSlider("Sobel Magnitude Threshold", 30, 99, 10*MAG_THRESHOLD0, 0.1);
 	sliLayout->addWidget(magThresholdSli);
 	connect(magThresholdSli, SIGNAL(valueChanged(int)), area, SLOT(changeMagThreshold(int)));
 
