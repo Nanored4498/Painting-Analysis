@@ -409,6 +409,7 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 			}
 		}
 	}
+	for(int i = 0; i < R*T; i++) if(res[i] < 0) std::cout << "err: " << i << " " << res[i] << "\n";
 	// Printing time
 	auto time2 = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> dtime = time2 - time;
@@ -541,7 +542,6 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 		// Line l2 = pca(ps, data->no, data->an, data->W);
 		// ls.push_back(l2);
 	}
-	delete [] res;
 	time2 = std::chrono::high_resolution_clock::now();
 	dtime = time2 - time;
 	std::cerr << "Finding lines: " << dtime.count() << std::endl;
