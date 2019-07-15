@@ -19,6 +19,8 @@
 #define INTERSECTIONS 2
 #define UNGROUP 3
 
+#define LINE_FROM_POINT_G 999
+
 class DrawingArea : public QWidget {
 Q_OBJECT
 

@@ -63,10 +63,22 @@ void DrawingArea::wheelEvent(QWheelEvent *event) {
 
 void DrawingArea::mousePressEvent(QMouseEvent *event) {
 	if(image0.isNull()) return;
+	// If some lines are drawned from a point thanks to the Ctrl+Click feature
+	// Then remove those lines
+	if(event->button() != Qt::MiddleButton) {
+		for(int i = 0; i < (int) lines.size(); i++) {
+			if(lines[i]->get_group() == LINE_FROM_POINT_G) {
+				delete lines[i];
+				lines[i--] = lines.back();
+				lines.pop_back();
+			}
+		}
+	}
 	double px = event->pos().x();
 	double py = event->pos().y();
 	/*** Select a line ***/
 	if(event->button() == Qt::LeftButton) {
+		// If Ctrl is pressed then find lines starting at this point
 		if(QApplication::keyboardModifiers() & Qt::ControlModifier) {
 			if(!pa_ldata) return;
 			double dx = (width() - scale_im*image0.width())/2.0 , dy = (height() - scale_im*image0.height())/2.0;
@@ -87,10 +99,10 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 				double tt = goods[i].second.first, rr = goods[i].second.second;
 				qInfo("%f %f %f", tt, rr, -goods[i].first);
 				DLine *l = new DLine(PA::Line(rr, tt, true), W, H);
-				l->setGroup(42);
+				l->setGroup(LINE_FROM_POINT_G);
 				lines.push_back(l);
 			}
-			update();
+			resizeLines();
 			return;
 		}
 		// If shift is not pressed, unselect all elements already selected
@@ -154,7 +166,6 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 			double s = scale * scale_im;
 			zonePoints.emplace_back(sx + (px - dx) / s, sy + (py - dy) / s);
 			resizeLines();
-			update();
 			return;
 		}
 		/*** Add line ****/

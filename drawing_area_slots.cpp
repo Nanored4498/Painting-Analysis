@@ -105,7 +105,6 @@ void DrawingArea::findLines() {
 	}
 	computeHorizon();
 	resizeLines();
-	update();
 }
 
 void DrawingArea::selectionAction() {
@@ -227,7 +226,6 @@ void DrawingArea::selectionAction() {
 	}
 	computeHorizon();
 	resizeLines();
-	update();
 }
 
 void DrawingArea::selectPlot(int original) {

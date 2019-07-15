@@ -12,6 +12,9 @@
 #define CYCLE (2*M_PI)
 #endif
 
+// #define DEBUG_BIL
+#define DEBUG_HOU
+
 void bilateral(Color* in, Color* out, int size, double sigma_col, double sigma_dis, int W, int H, bool *mask=nullptr) {
 	sigma_col *= sigma_col;
 	sigma_dis *= sigma_dis;
@@ -263,17 +266,19 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask, double thre
 	std::cerr << "Bilateral filter: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
-	// for(int i = 0; i < W*H; i++) {
-	// 	if(mask == nullptr || mask[i]) {
-	// 		Color col = lab_to_rgb(im2[i]);
-	// 		for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
-	// 	}
-	// }
-	// stbi_write_png("bilateral.png", W, H, 3, im, 0);
-	// time2 = std::chrono::high_resolution_clock::now();
-	// dtime = time2 - time;
-	// std::cerr << "Lab to RGB and saving: " << dtime.count() << std::endl;
-	// time = std::chrono::high_resolution_clock::now();
+	#ifdef DEBUG_BIL
+		for(int i = 0; i < W*H; i++) {
+			if(mask == nullptr || mask[i]) {
+				Color col = lab_to_rgb(im2[i]);
+				for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
+			}
+		}
+		stbi_write_png("bilateral.png", W, H, 3, im, 0);
+		time2 = std::chrono::high_resolution_clock::now();
+		dtime = time2 - time;
+		std::cerr << "Lab to RGB and saving: " << dtime.count() << std::endl;
+		time = std::chrono::high_resolution_clock::now();
+	#endif
 
 	return applySobelToBil(im2, W, H, mask, threshold, size_threshold);
 }
@@ -366,6 +371,17 @@ void add_intersections(double r, double c, double s, int W, int H,
 	std::sort(ps.begin(), ps.end());
 }
 
+void saveHoughTransform(const char* filename, double *hough, int R, int T) {
+	uchar *im = new uchar[R*T];
+	double maxH = 0;
+	for(int i = 0; i < R*T; i++)
+		maxH = std::max(maxH, hough[i]);
+	double f = 255.0 / maxH;
+	for(int i = 0; i < R*T; i++)
+		im[i] = hough[i] * f;
+	stbi_write_png(filename, R, T, 1, im, 0);
+}
+
 PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<int, int>> &zone) {
 	// Time
 	auto time = std::chrono::high_resolution_clock::now();
@@ -409,7 +425,10 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 			}
 		}
 	}
-	for(int i = 0; i < R*T; i++) if(res[i] < 0) std::cout << "err: " << i << " " << res[i] << "\n";
+	#ifdef DEBUG_HOU
+	saveHoughTransform("hough.png", res, R, T);
+	#endif
+
 	// Printing time
 	auto time2 = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> dtime = time2 - time;
@@ -462,9 +481,11 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 	double lim_dist = 0.0142 * diag;
 	while(ls.size() < 200 && i < size_lines) {
 		bool add = true;
-		int ind = lines[i];
+		int ind = lines[i++];
 		int ri = ind % R;
 		int ti = ind / R;
+		/*******************************/
+		/* Smmothing with neighborhood */
 		double min_neig = res[ind];
 		double r_unw_sum = 0, t_unw_sum = 0;
 		double r_w_sum = 0, t_w_sum = 0;
@@ -473,6 +494,10 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 		for(int r2 = -1; r2 <= 1; r2 ++) {
 			for(int t2 = -1; t2 <= 1; t2 ++) {
 				int rb = ri+r2, tb = ti+t2;
+				if(rb < 0) {
+					rb = 1-rb;
+					tb = tb > (T >> 1) ? tb - M_PI / t_step : tb + M_PI / t_step;
+				}
 				if(0 <= rb && rb < R && 0 <= tb && tb < T) {
 					double val = res[rb + tb*R];
 					min_neig = std::min(min_neig, val);
@@ -486,9 +511,9 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 		w -= n*min_neig;
 		double r_add = (r_w_sum - r_unw_sum*min_neig) / w;
 		double t_add = (t_w_sum - t_unw_sum*min_neig) / w;
-		i++;
 		double r = (ri + r_add + 0.5) * r_step;
 		double t = (ti + t_add + 0.5) * t_step - M_PI/2;
+		/*******************************/
 		double c = std::cos(t), s = std::sin(t);
 		add_intersections(r, c, s, W, H, zone, ps);
 		double x0 = ps[0].first, y0 = ps[0].second;

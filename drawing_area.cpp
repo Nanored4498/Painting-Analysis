@@ -56,6 +56,7 @@ void DrawingArea::resizeLines() {
 	for(DLine *l : lines) l->update(s, sp, dp);
 	for(DPoint &p : vanishPoints) p.update(s, sp, dp);
 	if(horizontalLine) horizontalLine->update(s, sp, dp);
+	update();
 }
 
 void DrawingArea::resize() {
@@ -75,7 +76,6 @@ void DrawingArea::resize() {
 	im_x = qAbs(dW-1) < 1e-4 ? 0 : int(0.5 * W * (1.0 - 1.0/dW) * (1.0 - double(rx0 - rX0) / (0.5*(dW-1)*rw)));
 	im_y = qAbs(dH-1) < 1e-4 ? 0 : int(0.5 * H * (1.0 - 1.0/dH) * (1.0 - double(ry0 - rY0) / (0.5*(dH-1)*rh)));
 	resizeLines();
-	update();
 }
 
 void DrawingArea::clamp_sxy() {

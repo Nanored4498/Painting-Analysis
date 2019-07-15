@@ -9,3 +9,6 @@ ims
 *.log
 *.gz
 *.out
+*.toc
+*.bbl
+*.blg
