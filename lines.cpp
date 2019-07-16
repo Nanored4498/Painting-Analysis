@@ -457,7 +457,7 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 	std::vector<PA::Line> ls;
 	std::vector<int> indices;
 
-	// Readjust score
+	// Readjust score in function of the crossing area
 	std::vector<double> cross_dis;
 	std::vector<std::pair<int, int>> ps;
 	for(int i : lines) {
@@ -531,7 +531,7 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 			if(dm < lim_dist2) {
 				add = false;
 				if(dm > 0.25*lim_dist2) break;
-				double alpha = 50e3*cons/std::pow(diag, 1.67) * (1.0 - dm / (0.25*lim_dist2)) * res[ind] / (res[ind] + res[*ind_it]);
+				double alpha = 10e4*cons/std::pow(diag, 1.8) * (1.0 - dm / (0.25*lim_dist2)) * res[ind] / (res[ind] + res[*ind_it]);
 				res[*ind_it] += res[ind];
 				l.set((1 - alpha) * l.rho + alpha * r, (1 - alpha) * l.theta + alpha * t, true);
 				break;

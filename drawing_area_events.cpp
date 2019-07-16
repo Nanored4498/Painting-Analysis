@@ -97,7 +97,6 @@ void DrawingArea::mousePressEvent(QMouseEvent *event) {
 			std::sort(goods.begin(), goods.end());
 			for(int i = 0; i < qMin(20, (int) goods.size()); i++) {
 				double tt = goods[i].second.first, rr = goods[i].second.second;
-				qInfo("%f %f %f", tt, rr, -goods[i].first);
 				DLine *l = new DLine(PA::Line(rr, tt, true), W, H);
 				l->setGroup(LINE_FROM_POINT_G);
 				lines.push_back(l);
