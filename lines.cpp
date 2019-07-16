@@ -494,10 +494,6 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 		for(int r2 = -1; r2 <= 1; r2 ++) {
 			for(int t2 = -1; t2 <= 1; t2 ++) {
 				int rb = ri+r2, tb = ti+t2;
-				if(rb < 0) {
-					rb = 1-rb;
-					tb = tb > (T >> 1) ? tb - M_PI / t_step : tb + M_PI / t_step;
-				}
 				if(0 <= rb && rb < R && 0 <= tb && tb < T) {
 					double val = res[rb + tb*R];
 					min_neig = std::min(min_neig, val);

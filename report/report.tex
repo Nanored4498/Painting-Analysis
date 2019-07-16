@@ -135,6 +135,8 @@
 
 	\subsection{General description}
 	
+	Finding lines in an image can be broken down into several steps. For my part, I divided this task into three main steps. First I eliminate the noise and smooth the image while keeping the areas with high gradient. Then I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.	
+	
 	\subsection{Smoothing}
 	
 	\subsection{Gradient}
