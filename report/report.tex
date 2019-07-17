@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[10pt]{article}
 
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
@@ -11,6 +11,9 @@
 \usepackage{amsmath}
 
 \graphicspath{{ims/}}
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\R}{\mathbb{R}}
 
 %%%%%%%%%%%% Title Part %%%%%%%%%%%%
 \pretitle{
@@ -150,6 +153,17 @@
 	I will not give the formulas for switching from RGB to CIELAB, but I can give the intermediate steps. There is first a non-linear transformation from RBG to sRGB then a linear transformation to the XYZ space and finally a non-linear transformation from XYZ to CIELAB. Once this change of space was implemented, the results on some paints improved considerably.
 	
 	\subsection{Smoothing}
+	
+	\paragraph{}
+	Smoothing is often important in image processing because it allows noise to disappear. There are many filters known to perform smoothing. There is for example the median filter which replaces each pixel by the median value on a neighbourhood, or the very used Gaussian filter which has the particularity to be applied with a low complexity thanks to a Fourrier transform. The Gaussian filter performs a weighted average of the neighboring pixels. This weighting is done using a Gaussian with a standard deviation $\sigma$. Averages are taken individually on each component of the color space. If we consider an image $I : \N \times \N \rightarrow \R$ which associates real values to integer coordinates, then applying a gaussian filter of standard deviation $\sigma$ gives the followin image $I'$:
+	$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z') \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma^2} \right) $$
+	Where $\Omega_{z}$ is a window around $z \in \N^2$ and $W = \sum_{z' \in \Omega_{z}} \exp \left( - \frac{\| z - z'\|^2}{2 \sigma^2} \right)$ is a factor of normalization. Since it is a convolution product, this can be computed in the Fourier space with a pointwise product. That's the big advantage of this filter. The problem is that it could erase borders that would be useful for finding the lines in the image.
+	
+	\paragraph{}
+	One solution to overcome these important edge disappearances is to use a bilateral filter \cite{bil}. This filter is defined using two functions $f: \N^2 \times \N^2 \rightarrow \R$ and $g: \R \times \R \rightarrow \R$ and gives the following image:
+	$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z) \, f(z, z') \, g \left( I(z), I(z') \right) $$
+	Where $\Omega_{z}$ is still a window around $z$ and $W = \sum_{z' \in \Omega_{z}} f(z, z') g(I(z), I(z'))$. Thanks to the $g$ function, not only the position of the other pixels is taken into account, but also the value of these pixels. The idea we can then have is to use this $g$ function to ignore pixels that have a too different color in order not to smooth the borders between two different colors. Taking two Gaussian functions for f and g is then common practice and that is the choice I made:
+	$$ f(z, z') = \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma_f^2} \right) \qquad g(u, u') = \exp \left( - \dfrac{\| u - u'\|^2}{2 \sigma_g^2} \right) $$
 	
 	\subsection{Gradient}
 	
