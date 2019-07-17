@@ -135,7 +135,19 @@
 
 	\subsection{General description}
 	
-	Finding lines in an image can be broken down into several steps. For my part, I divided this task into three main steps. First I eliminate the noise and smooth the image while keeping the areas with high gradient. Then I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.	
+	Finding lines in an image can be broken down into several steps. For my part, I divided this task into three main steps. First I change the color space to switch from RGB space to CIE Lab space \cite{cielab}. Then I eliminate the noise and smooth the image while keeping the areas with high gradient. In the third step I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.	
+	
+	\subsection{Color Space}
+	
+	\paragraph{}
+	At the beginning of my experiments I did not make any color space changes. The gradient of the image was calculated in the RGB space well known to all. In this space the colors are represented by three bytes, representing respectively the intensity of red, green and blue in the color. Unfortunately for some paintings, the amplitude of the gradient obtained did not necessarily match what I observed with the naked eye. My algorithm could return a high gradient where I could only see a slight color change and return a low gradient where I could see a boundary between two distinct colors. One of the concerns of RGB space, for example, is that it does not take into account the fact that the human eye is less sensitive to the color blue than to the color green.
+	
+	\paragraph{}
+	The CIELAB space \cite{cielab} allows you to correct this problem. Indeed, the Euclidean distance in this space corresponds well to the difference in colour that a human observes with his eyes. It is a space more in line with human vision. The three coordinates of CIELAB represent the lightness of the color ($L^* = 0$ yields black and $L^* = 100$ indicates diffuse white), its position between red/magenta and green ($a^*$, negative values indicate green while positive values indicate magenta) and its position between yellow and blue ($b^*$, negative values indicate blue and positive values indicate yellow). Thus the difference between two colors $(L_1^*, a_1^*, b_1^*)$ and $(L_2^*, a_2^*, b_2^*)$ is given by the Euclidean distance:
+	$$ \Delta E = \sqrt{(L_1^* - L_2^*)^2 + (a_1^* - a_2^*)^2 + (b_1^* - b_2^*)^2} $$
+	
+	\paragraph{}
+	I will not give the formulas for switching from RGB to CIELAB, but I can give the intermediate steps. There is first a non-linear transformation from RBG to sRGB then a linear transformation to the XYZ space and finally a non-linear transformation from XYZ to CIELAB. Once this change of space was implemented, the results on some paints improved considerably.
 	
 	\subsection{Smoothing}
 	
