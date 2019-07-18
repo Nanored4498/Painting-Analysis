@@ -12,8 +12,8 @@
 #define CYCLE (2*M_PI)
 #endif
 
-// #define DEBUG_BIL
-#define DEBUG_HOU
+#define DEBUG_BIL
+// #define DEBUG_HOU
 
 void bilateral(Color* in, Color* out, int size, double sigma_col, double sigma_dis, int W, int H, bool *mask=nullptr) {
 	sigma_col *= sigma_col;
@@ -271,7 +271,7 @@ PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask, double thre
 			if(mask == nullptr || mask[i]) {
 				Color col = lab_to_rgb(im2[i]);
 				for(int c = 0; c < 3; c++) im[3*i+c] = col.get(c);
-			}
+			} else if(mask != nullptr) for(int c = 0; c < 3; c++) im[3*i+c] = 0;
 		}
 		stbi_write_png("bilateral.png", W, H, 3, im, 0);
 		time2 = std::chrono::high_resolution_clock::now();

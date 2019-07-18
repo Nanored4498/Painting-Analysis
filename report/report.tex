@@ -50,8 +50,9 @@
 	\end{figure}
 
 	In a Delft museum, paintings by Pieter de Hooch are on display. It is quite easy to notice that some pairs of paintings are very similar (e.g. \figurename \ref{im:pair}). One hypothesis that would explain this strangeness is the possibility that another painter copied Pieter de Hooch's paintings. Looking at the pairs in more detail, we can notice that quite often one painting respects the rules of perspective well and the other does not respect them. This gives credibility to the hypothesis of the existence of another painter. But the human tends to be biased to check that in each pair one painting respects the rules of perspective and the other does not. Then comes the need to create a tool to check whether the perspective is respected in a painting with as little human intervention as possible. The goal of this internship was therefore to create a graphical interface to verify the perspective in a painting with as much automation as possible. \\
-	Tools already exist to find lines in an image. The most common and the one I used is the Hough transform \cite{hough}. I will describe the algorithms used to create my interface in this report. The development of a graphical user interface with minimal user control was necessary because there is no guarantee that a fully automated program will do exactly what you want. Much of the internship was used to learn how to make a graphical interface with Qt and to design an interface that is easily usable. But I'm not going to describe how this interface works, I'll just give some implemented features at the end of the report.
+	Tools already exist to find lines in an image. The most common and the one I used is the Hough transform \cite{hough}. I will describe the algorithms used to create my interface in this report. In most paintings there is a tiled floor and it is mainly the lines of the tiles that I studied in the paintings. The development of a graphical user interface with minimal user control was necessary because there is no guarantee that a fully automated program will do exactly what you want. Much of the internship was used to learn how to make a graphical interface with Qt and to design an interface that is easily usable. But I'm not going to describe how this interface works, I'll just give some implemented features inside this report.
 
+	\vspace{4cm}
 	\begin{center}
 		\tableofcontents
 	\end{center}
@@ -81,6 +82,7 @@
 			\node[below, red] at (5, 2.25) {\small Vanishing Line};
 			\node[left, green] at (0.4, 1.4) {\small Parallel lines};
 		\end{tikzpicture}
+		\caption{Illustration of the perspective rules}
 	\end{figure}
 
 	\subsection{Special case of a tiled floor}
@@ -164,6 +166,38 @@
 	$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z) \, f(z, z') \, g \left( I(z), I(z') \right) $$
 	Where $\Omega_{z}$ is still a window around $z$ and $W = \sum_{z' \in \Omega_{z}} f(z, z') g(I(z), I(z'))$. Thanks to the $g$ function, not only the position of the other pixels is taken into account, but also the value of these pixels. The idea we can then have is to use this $g$ function to ignore pixels that have a too different color in order not to smooth the borders between two different colors. Taking two Gaussian functions for f and g is then common practice and that is the choice I made:
 	$$ f(z, z') = \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma_f^2} \right) \qquad g(u, u') = \exp \left( - \dfrac{\| u - u'\|^2}{2 \sigma_g^2} \right) $$
+	
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}
+			\node at (0, 0.9) {\includegraphics[width=10cm]{smoothing.jpg}};
+			\node[below] at (0, 0) {Gaussian filter};
+			\node[below] at (-3.45, 0) {Original image};
+			\node[below] at (3.45, 0) {Bilateral filter};
+		\end{tikzpicture}
+		\vspace{-2mm}
+		\caption{Comparison of smoothing filters}
+		\label{im:smooths}
+	\end{figure}
+	\vspace{-2mm}
+
+	\paragraph{}
+	It can be seen in the \figurename \ref{im:smooths} that the bilateral filter keeps the edges clean between the tiles and that the noise inside the tiles is erased. This filter therefore does exactly what we want it to do, unlike the Gaussian filter which smoothes the edges between the tiles and therefore makes it difficult to accurately locate the edges. On the other hand because of the function $g$, the filter is not a convolution product and it is therefore no longer possible to go through the Fourier transform in order to calculate the results in a fast way. That's the only downside of this filter. To compensate for this calculation time which can be long and even to simplify the steps that will follow, I leave the user the possibility to select with a lasso the interesting area to study in the painting (\figurename \ref{im:cut}).
+	
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}
+		\node (a) at (-4, 0) {\includegraphics[scale=0.85]{zone_select.png}};
+		\node (b) at (3, 0) {\includegraphics[scale=1]{bilateral.png}};
+		\draw[->, ultra thick] (a) -- node[above, align=center]
+			{\footnotesize Cut the image \\[-1mm]
+				\footnotesize and apply \\[-1mm]
+				\footnotesize bilateral filter} (b);
+		\end{tikzpicture}
+		\vspace{-2mm}
+		\caption{The user has the possibility to select the interesting zone.}
+		\label{im:cut}
+	\end{figure}
 	
 	\subsection{Gradient}
 	
