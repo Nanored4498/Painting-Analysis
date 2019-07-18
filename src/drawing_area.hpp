@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include <drawing_elements.h>
+#include "drawing_elements.hpp"
 
 #define NBLINES 20
 #define RBRUSH0 10

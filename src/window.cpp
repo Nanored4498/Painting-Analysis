@@ -1,4 +1,4 @@
-#include <window.h>
+#include "window.hpp"
 
 #include <QApplication>
 #include <QMenuBar>

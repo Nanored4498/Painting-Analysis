@@ -1,4 +1,4 @@
-#include <labeled_slider.h>
+#include "labeled_slider.hpp"
 
 #include <QVBoxLayout>
 

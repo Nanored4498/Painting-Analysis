@@ -1,8 +1,8 @@
-#include "drawing_area.h"
+#include "drawing_area.hpp"
 
 #include <QApplication>
 
-#include "stb_image.h"
+#include "stb_image/stb_image.h"
 #include <fstream>
 
 const std::vector<QColor> DrawingArea::colors = {

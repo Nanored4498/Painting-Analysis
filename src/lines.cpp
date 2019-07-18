@@ -1,8 +1,8 @@
-#include "lines.h"
+#include "lines.hpp"
 #include <iostream>
 #include <map>
 #include <algorithm>
-#include "stb_image_write.h"
+#include "stb_image/stb_image_write.h"
 #include <chrono>
 
 #define uchar unsigned char

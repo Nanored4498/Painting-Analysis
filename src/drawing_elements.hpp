@@ -5,7 +5,7 @@
 #include <QLine>
 #include <QtMath>
 
-#include <lines.h>
+#include "lines.hpp"
 
 #define PDD std::pair<double, double>
 

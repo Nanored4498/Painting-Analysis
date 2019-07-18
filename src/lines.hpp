@@ -3,7 +3,7 @@
 
 #include <cmath>
 #include <vector>
-#include "color.h"
+#include "color.hpp"
 
 #define MIN_SOBEL_INTENSITY 75
 

@@ -7,8 +7,8 @@
 #include <QLabel>
 #include <QKeyEvent>
 
-#include <drawing_area.h>
-#include <labeled_slider.h>
+#include "drawing_area.hpp"
+#include "labeled_slider.hpp"
 
 class Window: public QMainWindow {
 Q_OBJECT

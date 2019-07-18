@@ -6,24 +6,24 @@ QT += \
 	gui
 
 SOURCES += \
-	main.cpp \
-	labeled_slider.cpp \
-	window.cpp \
-	drawing_area.cpp \
-	drawing_area_events.cpp \
-	drawing_area_slots.cpp \
-	drawing_elements.cpp \
-	lines.cpp \
-	stb_image.cpp
+	src/main.cpp \
+	src/labeled_slider.cpp \
+	src/window.cpp \
+	src/drawing_area.cpp \
+	src/drawing_area_events.cpp \
+	src/drawing_area_slots.cpp \
+	src/drawing_elements.cpp \
+	src/lines.cpp \
+	src/stb_image/stb_image.cpp
 
 HEADERS += \
-	window.h \
-	labeled_slider.h \
-	drawing_area.h \
-	drawing_elements.h \
-	lines.h \
-	stb_image.h \
-	stb_image_write.h
+	src/window.hpp \
+	src/labeled_slider.hpp \
+	src/drawing_area.hpp \
+	src/drawing_elements.hpp \
+	src/lines.hpp \
+	src/stb_image/stb_image.h \
+	src/stb_image/stb_image_write.h
 
 QMAKE_CXXFLAGS += \
 	-fopenmp
