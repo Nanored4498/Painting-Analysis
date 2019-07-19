@@ -220,11 +220,13 @@ PA::ProblemData* PA::applySobelToBil(Color* im, int W, int H, bool *mask, double
 	time = std::chrono::high_resolution_clock::now();
 	/* an in (-pi/2, pi/2) */
 
-	#ifdef DEBUG_SOB
+	#if defined DEBUG_SOB || defined DEBUG_CLE
 	#ifdef MODE_PI
 	for(int i = 0; i < W*H; i++)
 		if(an[i] < 0) an[i] += M_PI;
 	#endif
+	#endif
+	#ifdef DEBUG_SOB
 	save_sobel("sobel0.png", res);
 	#endif
 

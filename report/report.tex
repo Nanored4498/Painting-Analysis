@@ -236,13 +236,13 @@
 	\begin{figure}
 		\centering
 		\begin{tikzpicture}
-		\node (a) at (0, 0) {\includegraphics[scale=2.4]{sobel_wc.png}};
-		\node (b) at (6, 0) {\includegraphics[scale=2.4]{sobel_c.png}};
+		\node (a) at (0, 0) {\includegraphics[scale=2.75]{sobel_wc.png}};
+		\node (b) at (7, 0) {\includegraphics[scale=2.75]{sobel_c.png}};
 		\draw[->, ultra thick] (a) -- node[above] {\small Cleaning} (b);
-		\node (c) at (5.5, -1.72) {\scriptsize Erased because connected component too small};
-		\draw[->, thick, gray] (c.west) -- (0.85, -0.29);
-		\node (d) at (-0.15, -1.6) {\scriptsize Erased because the intensity is too low};
-		\draw[->, thick, gray] (d.north) -- (-0.75, -0.45);
+		\node (c) at (5.5, -1.8) {\scriptsize Erased because connected component too small};
+		\draw[->, thick, gray] (c.west) -- (0.98, -0.35);
+		\node (d) at (-0.15, -1.65) {\scriptsize Erased because the intensity is too low};
+		\draw[->, thick, gray] (d.north) -- (-0.85, -0.5);
 		\end{tikzpicture}
 		\vspace{-2mm}
 		\caption{Cleaning the gradient image}
@@ -272,7 +272,19 @@
 		\end{algorithmic}
 	\end{algorithm}
 
-	The function calculates a weighted average in a neighborhood of size $3 \times 3$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient. In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient.
+	The function calculates a weighted average of the gradient angle $\theta$ in a neighborhood of size $3 \times 3$ around the pixel $(x, y)$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient ($G$). In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient.
+	
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}
+		\node[] (a) at (0, 0) {\includegraphics[scale=2.9]{sobel_ws.png}};
+		\node[] (b) at (0, -2.7) {\includegraphics[scale=2.9]{sobel_s.png}};
+		\node[below=2.5mm, white] at (a.150) {\small \, Without smoothing};
+		\node[below=2.5mm, white] at (b.150) {\small With smoothing};
+		\end{tikzpicture}
+		\vspace{-3mm}
+		\caption{Smoothing gradient result}
+	\end{figure}
 	
 	\subsection{Hough Transform}
 	
