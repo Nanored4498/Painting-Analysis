@@ -14,7 +14,7 @@
 
 // #define DEBUG_BIL
 // #define DEBUG_SOB
-#define DEBUG_CLE
+// #define DEBUG_CLE
 // #define DEBUG_HOU
 
 void bilateral(Color* in, Color* out, int size, double sigma_col, double sigma_dis, int W, int H, bool *mask=nullptr) {

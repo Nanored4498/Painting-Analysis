@@ -1,4 +1,4 @@
-\documentclass[10pt]{article}
+\documentclass[11pt]{article}
 
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
@@ -21,19 +21,19 @@
 %%%%%%%%%%%% Title Part %%%%%%%%%%%%
 \pretitle{
 	\begin{center}
-	\includegraphics[width=4cm]{logo_ens_lyon.pdf}
+	\includegraphics[width=3.5cm]{logo_ens_lyon.pdf}
 	\hspace{5cm}
-	\includegraphics[width=5.5cm]{logo_tu_delft.png}
+	\includegraphics[width=4.7cm]{logo_tu_delft.png}
 	\LARGE
 }
 \title{
 	\rule{\linewidth}{0.4mm}
 	\textbf{Perspective Check in Paintings} \\
 	\textit{M1 Internship}
-	\rule{\linewidth}{0.6mm}
+	\rule{\linewidth}{0.6mm} \vspace{-10mm}
 }
 \author{
-	Yoann Coudert--Osmont \\[3mm]
+	Yoann Coudert--Osmont \\[1.5mm]
 	\textit{Supervised by} \\
 	Elmar Eisemann \qquad Ricardo Marroqium \\[2mm]
 }
@@ -52,10 +52,10 @@
 		\label{im:pair}
 	\end{figure}
 
-	In a Delft museum, paintings by Pieter de Hooch are on display. It is quite easy to notice that some pairs of paintings are very similar (e.g. \figurename \ref{im:pair}). One hypothesis that would explain this strangeness is the possibility that another painter copied Pieter de Hooch's paintings. Looking at the pairs in more detail, we can notice that quite often one painting respects the rules of perspective well and the other does not respect them. This gives credibility to the hypothesis of the existence of another painter. But the human tends to be biased to check that in each pair one painting respects the rules of perspective and the other does not. Then comes the need to create a tool to check whether the perspective is respected in a painting with as little human intervention as possible. The goal of this internship was therefore to create a graphical interface to verify the perspective in a painting with as much automation as possible. \\
-	Tools already exist to find lines in an image. The most common and the one I used is the Hough transform \cite{hough}. I will describe the algorithms used to create my interface in this report. In most paintings there is a tiled floor and it is mainly the lines of the tiles that I studied in the paintings. The development of a graphical user interface with minimal user control was necessary because there is no guarantee that a fully automated program will do exactly what you want. Much of the internship was used to learn how to make a graphical interface with Qt and to design an interface that is easily usable. But I'm not going to describe how this interface works, I'll just give some implemented features inside this report.
+	In a Delft museum, paintings by Pieter de Hooch are on display. It is quite easy to notice that some pairs of paintings are very similar (e.g. \figurename \ref{im:pair}). One hypothesis that would explain this strangeness is the possibility that another painter copied Pieter de Hooch's paintings. Looking at the pairs in more detail, we can notice that quite often one painting respects the rules of perspective well and the other does not respect them. This gives credibility to the hypothesis of the existence of another painter. But the human tends to be biased to check that in each pair, one painting respects the rules of perspective and the other does not. Then comes the need to create a tool to check whether the perspective is respected in a painting with as little human intervention as possible. The goal of this internship was therefore to create a graphical interface to verify the perspective in a painting with as much automation as possible. \\
+	Tools already exist to find lines in an image. The most common and the one I used is the Hough transform \cite{hough}. I will describe the algorithms used to create my interface in this report. In most paintings there is a tiled floor and it is mainly the lines of the tiles that I studied. The development of a graphical user interface with minimal user control was necessary because there is no guarantee that a fully automated program will do exactly what we want. Much of the internship was used to learn how to make a graphical interface with Qt and to design an interface that is easily usable. But I'm not going to describe how this interface works, I'll just give some implemented features inside this report.
 
-	\vspace{4cm}
+	\vspace{3cm}
 	\begin{center}
 		\tableofcontents
 	\end{center}
@@ -87,6 +87,7 @@
 		\end{tikzpicture}
 		\caption{Illustration of the perspective rules}
 	\end{figure}
+	\vspace{-5mm}
 
 	\subsection{Special case of a tiled floor}
 	
@@ -94,7 +95,7 @@
 	
 	\begin{figure}[h]
 		\centering
-		\begin{tikzpicture}[thick]
+		\begin{tikzpicture}[thick, yscale=0.89]
 		\draw[very thick] (0, 6) -- (12, 6);
 		\draw[semithick] (0, 0) -- (12, 0);
 		\node[above] at (6, 6) {Vanishing Line};
@@ -144,7 +145,9 @@
 	\subsection{General description}
 	
 	\paragraph{}
-	Finding lines in an image can be broken down into several steps. For my part, I divided this task into three main steps. First I change the color space to switch from RGB space to CIE Lab space \cite{cielab}. Then I eliminate the noise and smooth the image while keeping the areas with high gradient. In the third step I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.	
+	Finding lines in an image can be broken down into several steps. For my part, I divided this task into four main steps. First I change the color space to switch from RGB space to CIE Lab space \cite{cielab}. Then I eliminate the noise and smooth the image while keeping the areas with high gradient. In the third step I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.
+	
+	Once the user has obtained the lines of the image he has the possibility to make groups in order to calculate the vanishing points, the vanishing line but also to calculate the diagonals of a tiled floor as we could see in the previous part. Once the user has finished this part he can judge if the perspective is well respected.
 	
 	\subsection{Color Space}
 	
@@ -170,6 +173,7 @@
 	$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z) \, f(z, z') \, g \left( I(z), I(z') \right) $$
 	Where $\Omega_{z}$ is still a window around $z$ and $W = \sum_{z' \in \Omega_{z}} f(z, z') g(I(z), I(z'))$. Thanks to the $g$ function, not only the position of the other pixels is taken into account, but also the value of these pixels. The idea we can then have is to use this $g$ function to ignore pixels that have a too different color in order not to smooth the borders between two different colors. Taking two Gaussian functions for f and g is then common practice and that is the choice I made:
 	$$ f(z, z') = \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma_f^2} \right) \qquad g(u, u') = \exp \left( - \dfrac{\| u - u'\|^2}{2 \sigma_g^2} \right) $$
+	The two standard deviations ($\sigma_f$ and $\sigma_g$) and the size of the neighborhood are automatically calculated according to certain image characteristics.
 	
 	\begin{figure}[h]
 		\centering
@@ -179,26 +183,26 @@
 			\node[below] at (-3.45, 0) {Original image};
 			\node[below] at (3.45, 0) {Bilateral filter};
 		\end{tikzpicture}
-		\vspace{-2mm}
+		\vspace{-1mm}
 		\caption{Comparison of smoothing filters}
 		\label{im:smooths}
 	\end{figure}
-	\vspace{-2mm}
+	\vspace{-1mm}
 
 	\paragraph{}
-	It can be seen in the \figurename \ref{im:smooths} that the bilateral filter keeps the edges clean between the tiles and that the noise inside the tiles is erased. This filter therefore does exactly what we want it to do, unlike the Gaussian filter which smoothes the edges between the tiles and therefore makes it difficult to accurately locate the edges. On the other hand because of the function $g$, the filter is not a convolution product and it is therefore no longer possible to go through the Fourier transform in order to calculate the results in a fast way. That's the only downside of this filter. To compensate for this calculation time which can be long and even to simplify the steps that will follow, I leave the user the possibility to select with a lasso the interesting area to study in the painting (\figurename \ref{im:cut}).
+	It can be seen in the \figurename \ref{im:smooths} that the bilateral filter keeps the edges clean between the tiles and that the noise inside the tiles is erased. This filter therefore does exactly what we want it to do, unlike the Gaussian filter which smooths the edges between the tiles and therefore makes it difficult to accurately locate the edges. On the other hand because of the function $g$, the filter is not a convolution product and it is therefore no longer possible to go through the Fourier transform in order to calculate the results in a fast way. That's the only downside of this filter. To compensate for this calculation time which can be long and even to simplify the steps that will follow, I leave the user the possibility to select with a lasso the interesting area to study in the painting (\figurename \ref{im:cut}).
 	
 	\begin{figure}[h]
 		\centering
 		\begin{tikzpicture}
-		\node (a) at (-4, 0) {\includegraphics[scale=0.85]{zone_select.png}};
-		\node (b) at (3, 0) {\includegraphics[scale=1]{bilateral.png}};
+		\node (a) at (0, 0) {\includegraphics[scale=1]{zone_select.png}};
+		\node (b) at (8, 0) {\includegraphics[scale=1.2]{bilateral.png}};
 		\draw[->, ultra thick] (a) -- node[above, align=center]
 			{\footnotesize Cut the image \\[-1mm]
 				\footnotesize and apply \\[-1mm]
 				\footnotesize bilateral filter} (b);
 		\end{tikzpicture}
-		\vspace{-2mm}
+		\vspace{-1mm}
 		\caption{The user has the possibility to select the interesting zone.}
 		\label{im:cut}
 	\end{figure}
@@ -221,7 +225,7 @@
 		\node at (0, 0) {\includegraphics[scale=1.125]{bilateral2.png}};
 		\node at (8.15, 0) {\includegraphics[scale=1.125]{sobel0.png}};
 		\end{tikzpicture}
-		\vspace{-5mm}
+		\vspace{-4mm}
 		\caption{Result of the Sobel filter}
 		\label{im:sob}
 	\end{figure}
@@ -233,28 +237,28 @@
 	\paragraph{Automatic cleaning}
 	To eliminate the remaining noise and make the rest easier, I clean the image a little bit. To do so, I apply a threshold that will zero all pixels in the gradient whose intensity is less than a certain value. Then I calculate the connected components of the remaining pixels and zero all pixels of the connected components that have a size smaller than a minimum size. I have a function that calculates the intensity threshold and minimum size of the related components based on the characteristics of the image. Unfortunately, these two values are not always perfect. I therefore allow the user to modify these values if necessary using sliders. The effect of this cleaning is illustrated in \figurename \ref{im:clean}.
 	
-	\begin{figure}
+	\begin{figure}[h]
 		\centering
 		\begin{tikzpicture}
 		\node (a) at (0, 0) {\includegraphics[scale=2.75]{sobel_wc.png}};
 		\node (b) at (7, 0) {\includegraphics[scale=2.75]{sobel_c.png}};
 		\draw[->, ultra thick] (a) -- node[above] {\small Cleaning} (b);
-		\node (c) at (5.5, -1.8) {\scriptsize Erased because connected component too small};
-		\draw[->, thick, gray] (c.west) -- (0.98, -0.35);
-		\node (d) at (-0.15, -1.65) {\scriptsize Erased because the intensity is too low};
+		\node (c) at (6.5, -1.98) {\footnotesize Erased because connected component too small};
+		\draw[->, thick, gray] (c.174) -- (0.98, -0.35);
+		\node (d) at (0, -1.72) {\footnotesize Erased because the intensity is too low};
 		\draw[->, thick, gray] (d.north) -- (-0.85, -0.5);
 		\end{tikzpicture}
-		\vspace{-2mm}
+		\vspace{-1mm}
 		\caption{Cleaning the gradient image}
 		\label{im:clean}
 	\end{figure}
 
 	\paragraph{Smoothing}
-	It can be noted that the direction of the gradient is not perfect. Some isolated pixels, or even groups of pixels, do not have a good direction. However, in the following I will use this direction to find the lines. That's why I smooth the direction in the gradient image. This is the function that gives the new smoothed value of a pixel of the gradient:
+	It can be noted that the direction of the gradient is not perfect. Some isolated pixels, or even groups of pixels, do not have a good direction. However, in the following I will use this direction to find the lines. That's why I smooth the direction in the gradient image. The \textsc{Algorithm} \ref{alg:gsmooth} at the top of the next page is the function that gives the new smoothed value of a pixel of the gradient.
 	
-	\begin{algorithm}
+	\begin{algorithm}[h]
 		\caption{Gradient Smoothing}
-		\label{alg:magn}
+		\label{alg:gsmooth}
 		\begin{algorithmic}
 			\State $M \gets \begin{bmatrix}
 				0.0925 & 0.12 & 0.0925 \\
@@ -272,21 +276,38 @@
 		\end{algorithmic}
 	\end{algorithm}
 
-	The function calculates a weighted average of the gradient angle $\theta$ in a neighborhood of size $3 \times 3$ around the pixel $(x, y)$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient ($G$). In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient.
+	The function calculates a weighted average of the gradient angle $\theta$ in a neighborhood of size $3 \times 3$ around the pixel $(x, y)$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient ($G$). In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient. The \figurename \ref{im:gsmooth} show the result of the previous algorithm.
 	
 	\begin{figure}[h]
 		\centering
 		\begin{tikzpicture}
-		\node[] (a) at (0, 0) {\includegraphics[scale=2.9]{sobel_ws.png}};
-		\node[] (b) at (0, -2.7) {\includegraphics[scale=2.9]{sobel_s.png}};
-		\node[below=2.5mm, white] at (a.150) {\small \, Without smoothing};
-		\node[below=2.5mm, white] at (b.150) {\small With smoothing};
+		\node[] (a) at (0, 0) {\includegraphics[scale=3.3]{sobel_ws.png}};
+		\node[] (b) at (0, -3) {\includegraphics[scale=3.3]{sobel_s.png}};
+		\node[below=3mm, white] at (a.150) {\small \, Without smoothing};
+		\node[below=3mm, white] at (b.150) {\small With smoothing};
 		\end{tikzpicture}
-		\vspace{-3mm}
+		\vspace{-1mm}
 		\caption{Smoothing gradient result}
+		\label{im:gsmooth}
+	\end{figure}
+
+	\paragraph{Manual cleaning} Because there may be objects on the floor of the paint or sometimes because the noise is too high or the paint is damaged (for the high quality images I may have had) there may be undesirable parts left in the gradient image. That's why I'm leaving user control again. There is the possibility of using a brush to remove unwanted parts. The user can choose the size of the brush and erase bad brush strokes that he could have given. The \figurename \ref{im:brush} illustrates this tool. White pixels are the erased gradient pixels.
+	
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}
+		\node (a) at (0, 0) {\includegraphics[scale=0.18]{w_man_c.png}};
+		\node (b) at (6, 0) {\includegraphics[scale=0.18]{man_c.png}};
+		\draw[->, ultra thick] (a) -- node[above] {\small brush stroke} (b);
+		\end{tikzpicture}
+		\vspace{-2mm}
+		\caption{Usage of the brush}
+		\label{im:brush}
 	\end{figure}
 	
 	\subsection{Hough Transform}
+	
+	Main part.
 	
 	\begin{figure}[h]
 		\centering
