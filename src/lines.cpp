@@ -12,7 +12,9 @@
 #define CYCLE (2*M_PI)
 #endif
 
-#define DEBUG_BIL
+// #define DEBUG_BIL
+// #define DEBUG_SOB
+#define DEBUG_CLE
 // #define DEBUG_HOU
 
 void bilateral(Color* in, Color* out, int size, double sigma_col, double sigma_dis, int W, int H, bool *mask=nullptr) {
@@ -103,7 +105,7 @@ void smooth_sep(double* norm, double* angle, int W, int H, double* res, double m
 	for(int i = 0; i < W; i++) {
 		for(int j = 0; j < H; j++) {
 			int pix = i + j*W;
-			if(norm[pix] < 0.005*m) continue;
+			if(norm[pix] < 0.001*m) continue;
 			if(i == 0 || i == W-1 || j == 0 || j == H-1) {
 				res[pix] = angle[pix];
 				continue;
@@ -112,7 +114,7 @@ void smooth_sep(double* norm, double* angle, int W, int H, double* res, double m
 			for(int a = 0; a < 3; a++) {
 				for(int b = 0; b < 3; b++) {
 					int p2 = (i+a-1) + (j+b-1)*W;
-					if(norm[p2] < 0.005*m) continue;
+					if(norm[p2] < 0.001*m) continue;
 					#ifdef MODE_PI
 					co += Mss[a][b] * norm[p2] * std::cos(2.0*angle[p2]);
 					si += Mss[a][b] * norm[p2] * std::sin(2.0*angle[p2]);
@@ -192,10 +194,7 @@ void clean(double *n, int W, int H, double threshold, unsigned int min_size) {
 	for(int i = 1; i < W-1; i++) {
 		for(int j = 1; j < H; j++) {
 			int pix = i + j*W;
-			if(n[pix] < threshold) {
-				continue;
-				n[pix] = 0;
-			}
+			if(n[pix] < threshold) continue;
 			for(int k = 0; k < 4; k++) {
 				int p2 = pix+pred[k];
 				if(n[p2] >= threshold) u.merge(pix, p2);
@@ -214,10 +213,20 @@ PA::ProblemData* PA::applySobelToBil(Color* im, int W, int H, bool *mask, double
 	double *no, *an;
 	
 	double m = sobel(im, no, an, W, H, mask);
+	PA::ProblemData *res = new PA::ProblemData(W, H, no, an, im, m);
 	auto time2 = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> dtime = time2 - time;
 	std::cerr << "Sobel filter: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
+	/* an in (-pi/2, pi/2) */
+
+	#ifdef DEBUG_SOB
+	#ifdef MODE_PI
+	for(int i = 0; i < W*H; i++)
+		if(an[i] < 0) an[i] += M_PI;
+	#endif
+	save_sobel("sobel0.png", res);
+	#endif
 
 	clean(no, W, H, 0.001*threshold*sigma_col*m, 0.01*size_threshold*diag);
 	time2 = std::chrono::high_resolution_clock::now();
@@ -225,11 +234,16 @@ PA::ProblemData* PA::applySobelToBil(Color* im, int W, int H, bool *mask, double
 	std::cerr << "Cleaning: " << dtime.count() << std::endl;
 	time = std::chrono::high_resolution_clock::now();
 
+	#ifdef DEBUG_CLE
+	save_sobel("sobel1.png", res);
+	#endif
+
 	double *an2 = new double[W*H];
 	for(int i = 0; i < num_smooth_pass; i++) {
 		smooth_sep(no, an, W, H, an2, m);
 		std::swap(an, an2);
 	}
+	res->an = an;
 	delete[] an2;
 	time2 = std::chrono::high_resolution_clock::now();
 	dtime = time2 - time;
@@ -241,7 +255,7 @@ PA::ProblemData* PA::applySobelToBil(Color* im, int W, int H, bool *mask, double
 		if(an[i] < 0) an[i] += M_PI;
 	#endif
 
-	return new PA::ProblemData(W, H, no, an, im, m);
+	return res;
 }
 
 PA::ProblemData* PA::applySobel(uchar* im, int W, int H, bool *mask, double threshold, double size_threshold) {

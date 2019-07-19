@@ -9,10 +9,13 @@
 \usepackage{hyperref}
 \usepackage{tikz}
 \usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \graphicspath{{ims/}}
 
 \newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
 \newcommand{\R}{\mathbb{R}}
 
 %%%%%%%%%%%% Title Part %%%%%%%%%%%%
@@ -140,6 +143,7 @@
 
 	\subsection{General description}
 	
+	\paragraph{}
 	Finding lines in an image can be broken down into several steps. For my part, I divided this task into three main steps. First I change the color space to switch from RGB space to CIE Lab space \cite{cielab}. Then I eliminate the noise and smooth the image while keeping the areas with high gradient. In the third step I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.	
 	
 	\subsection{Color Space}
@@ -200,6 +204,75 @@
 	\end{figure}
 	
 	\subsection{Gradient}
+	
+	\paragraph{}
+	To compute the gradient of the image, I used a Sobel filter of size $3$ by $3$. This filter calculates the amplitude of the gradient along the x-axis and the y-axis and then deduces the gradient norm and direction from it. This is done for each $C$ component of the CIELAB space. I denote by $\ast$ the convolution product. We then have:
+	$$ G_{C, x} = \begin{bmatrix} -3 & 0 & 3 \\ -10 & 0 & 10 \\ -3 & 0 & 3 \end{bmatrix} \ast C
+		\qquad G_{C, y} = \begin{bmatrix} -3 & -10 & -3 \\ 0 & 0 & 0 \\ 3 & 10 & 3 \end{bmatrix} \ast C
+	$$
+	Where $G_{C, x}$ and $G_{C, y}$ are are respectively the discrete horizontal and vertical gradients of the component $C$. We can then compute the norm of the gradient in this component:
+	$$ G_C = \sqrt{G_{C, x}^2 + G_{C, y}^2} $$
+	As only the direction of the gradient and not the orientation of the gradient interests us, we want to calculate the angle of the gradient modulo $\pi$ instead of $2 \pi$. We then defines $(G_{C, x}', \, G_{C, y}')$ equal to $(G_{C, x}, \, G_{C, y})$ if $G_{C, x} \geqslant 0$ or to $(-G_{C, x}, \, -G_{C, y})$ otherwise. Finally, the norm $G$ and the angle $\theta$ of the gradient are obtained as follows:
+	$$ G = \sqrt{G_{L^*} + G_{a^*} + G_{b^*}} \qquad \theta = \arg \left( G_{L^*} G_{L^*, x}' + G_{a^*} G_{a^*, x}' + G_{b^*} G_{b^*, x}' + i \left( G_{L^*} G_{L^*, y}' + G_{a^*} G_{a^*, y}' + G_{b^*} G_{b^*, y}' \right) \right)$$
+	
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}
+		\node at (0, 0) {\includegraphics[scale=1.125]{bilateral2.png}};
+		\node at (8.15, 0) {\includegraphics[scale=1.125]{sobel0.png}};
+		\end{tikzpicture}
+		\vspace{-5mm}
+		\caption{Result of the Sobel filter}
+		\label{im:sob}
+	\end{figure}
+	\vspace{-2mm}
+
+	\paragraph{}
+	The \figurename \ref{im:sob} we can see the result obtain on the same painting used in the previous part about smoothing (I will use this painting throughout the explanation of the algorithm). The image on the left is the smoothed paint from the previous part and the one on the right is the image representing the gradient. For each pixel, the intensity of the color represents the norm of the gradient. In the image I give, the intensity is proportional to the square root of the norm. This choice was made so that it could be seen that despite the smoothing done previously, the gradient norm is not zero inside the tiles. The color gives the angle of the gradient. Red for $0+\Z \pi$, green for $\pi / 3 + \Z \pi$ and blue for $2\pi / 3 + \Z \pi$.
+	
+	\paragraph{Automatic cleaning}
+	To eliminate the remaining noise and make the rest easier, I clean the image a little bit. To do so, I apply a threshold that will zero all pixels in the gradient whose intensity is less than a certain value. Then I calculate the connected components of the remaining pixels and zero all pixels of the connected components that have a size smaller than a minimum size. I have a function that calculates the intensity threshold and minimum size of the related components based on the characteristics of the image. Unfortunately, these two values are not always perfect. I therefore allow the user to modify these values if necessary using sliders. The effect of this cleaning is illustrated in \figurename \ref{im:clean}.
+	
+	\begin{figure}
+		\centering
+		\begin{tikzpicture}
+		\node (a) at (0, 0) {\includegraphics[scale=2.4]{sobel_wc.png}};
+		\node (b) at (6, 0) {\includegraphics[scale=2.4]{sobel_c.png}};
+		\draw[->, ultra thick] (a) -- node[above] {\small Cleaning} (b);
+		\node (c) at (5.5, -1.72) {\scriptsize Erased because connected component too small};
+		\draw[->, thick, gray] (c.west) -- (0.85, -0.29);
+		\node (d) at (-0.15, -1.6) {\scriptsize Erased because the intensity is too low};
+		\draw[->, thick, gray] (d.north) -- (-0.75, -0.45);
+		\end{tikzpicture}
+		\vspace{-2mm}
+		\caption{Cleaning the gradient image}
+		\label{im:clean}
+	\end{figure}
+
+	\paragraph{Smoothing}
+	It can be noted that the direction of the gradient is not perfect. Some isolated pixels, or even groups of pixels, do not have a good direction. However, in the following I will use this direction to find the lines. That's why I smooth the direction in the gradient image. This is the function that gives the new smoothed value of a pixel of the gradient:
+	
+	\begin{algorithm}
+		\caption{Gradient Smoothing}
+		\label{alg:magn}
+		\begin{algorithmic}
+			\State $M \gets \begin{bmatrix}
+				0.0925 & 0.12 & 0.0925 \\
+				0.12 & 0.15 & 0.12 \\
+				0.0925 & 0.12 & 0.0925
+			\end{bmatrix}$
+			\Function{SmoothGrad}{$G, \theta, x, y$}
+			\State $a, b \gets 0, 0$
+			\For{$i, j \in \{ -1, 0, 1 \}^2$}
+				\State $a \gets a + M[j+1][i+1] \times G[x+i][y+j] \times \cos \left( 2 \times \theta[x+i][y+j] \right)$
+				\State $b \gets b + M[j+1][i+1] \times G[x+i][y+j] \times \sin \left( 2 \times \theta[x+i][y+j] \right)$
+			\EndFor
+			\State $\theta[x][y] \gets \arg \left( a + ib \right) \, / \, 2$
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+
+	The function calculates a weighted average in a neighborhood of size $3 \times 3$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient. In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient.
 	
 	\subsection{Hough Transform}
 	

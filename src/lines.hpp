@@ -8,7 +8,6 @@
 #define MIN_SOBEL_INTENSITY 75
 
 #define MODE_PI
-#define NUM_PASS 6
 
 #define uchar unsigned char
 
