@@ -307,7 +307,19 @@
 	
 	\subsection{Hough Transform}
 	
-	Main part.
+	\paragraph{A first try}
+	Before using Hough's transform I tried something else that I will describe in a few lines in this paragraph. We are trying to find the main lines that make up the image. My idea was to calculate connected components on the pixels of the gradient. I considered two pixels, adjacent if they touched each other and if their gradient angle difference was less than a certain value. Then I performed a PCA (Principal Component Analysis) \cite{pca} on each connected component in order to obtain equations of lines corresponding to the main direction of each component. Then I merged all the related components for which the guide lines were close and re-performed a PCA again to obtain new, more precise line equations.
+	
+	\paragraph{}
+	But the big problem is that the principal component analysis was not very good on the small connected components and some lines were mainly formed by a succession of small connected components especially in paintings with very small tiles. Then there is a butterfly effect, some components merge when they should not, and others do not merge when they should. The results were therefore not very good and I implemented the Hough transform \cite{hough} which gave much better results.
+	
+	\paragraph{Parametrization}
+	We often represent a line with two parameters $a$ and $b$, by the equation:
+	\vspace{-2.2mm} $$ y = ax + b \vspace{-2.2mm} $$ 
+	But this representation has some drawbacks. The parameters are not bounded if we consider all the lines passing through a rectangle. Fortunately, Duda and Hart have designed another representation that allows us to have bounded parameters $\rho$ and $\theta$:
+	\vspace{-2.2mm} $$ \rho = x \cos(\theta) + y \sin(\theta) \vspace{-2.2mm} $$
+	Thus $\rho$ represents the distance between the line and the origin except for the sign and $\theta$ represents the angle of the line normal. Let's call $D$ the length of the diagonal of the image. In the literature we generally take $\theta$ in $[0; \pi[$ and $\rho$ in $[-D; D]$. For my part, I preferred to take $theta$ in $[-\pi / 2; \pi]$ and $\rho$ in $[0; D]$.
+	
 	
 	\begin{figure}[h]
 		\centering
