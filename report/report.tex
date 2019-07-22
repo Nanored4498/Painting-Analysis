@@ -216,8 +216,8 @@
 	$$
 	Where $G_{C, x}$ and $G_{C, y}$ are are respectively the discrete horizontal and vertical gradients of the component $C$. We can then compute the norm of the gradient in this component:
 	$$ G_C = \sqrt{G_{C, x}^2 + G_{C, y}^2} $$
-	As only the direction of the gradient and not the orientation of the gradient interests us, we want to calculate the angle of the gradient modulo $\pi$ instead of $2 \pi$. We then defines $(G_{C, x}', \, G_{C, y}')$ equal to $(G_{C, x}, \, G_{C, y})$ if $G_{C, x} \geqslant 0$ or to $(-G_{C, x}, \, -G_{C, y})$ otherwise. Finally, the norm $G$ and the angle $\theta$ of the gradient are obtained as follows:
-	$$ G = \sqrt{G_{L^*} + G_{a^*} + G_{b^*}} \qquad \theta = \arg \left( G_{L^*} G_{L^*, x}' + G_{a^*} G_{a^*, x}' + G_{b^*} G_{b^*, x}' + i \left( G_{L^*} G_{L^*, y}' + G_{a^*} G_{a^*, y}' + G_{b^*} G_{b^*, y}' \right) \right)$$
+	As only the direction of the gradient and not the orientation of the gradient interests us, we want to calculate the angle of the gradient modulo $\pi$ instead of $2 \pi$. We then defines $(G_{C, x}', \, G_{C, y}')$ equal to $(G_{C, x}, \, G_{C, y})$ if $G_{C, x} \geqslant 0$ or to $(-G_{C, x}, \, -G_{C, y})$ otherwise. Finally, the norm $G$ and the angle $\Theta$ of the gradient are obtained as follows:
+	$$ G = \sqrt{G_{L^*} + G_{a^*} + G_{b^*}} \qquad \Theta = \arg \left( G_{L^*} G_{L^*, x}' + G_{a^*} G_{a^*, x}' + G_{b^*} G_{b^*, x}' + i \left( G_{L^*} G_{L^*, y}' + G_{a^*} G_{a^*, y}' + G_{b^*} G_{b^*, y}' \right) \right)$$
 	
 	\begin{figure}[h]
 		\centering
@@ -265,18 +265,18 @@
 				0.12 & 0.15 & 0.12 \\
 				0.0925 & 0.12 & 0.0925
 			\end{bmatrix}$
-			\Function{SmoothGrad}{$G, \theta, x, y$}
+			\Function{SmoothGrad}{$G, \Theta, x, y$}
 			\State $a, b \gets 0, 0$
 			\For{$i, j \in \{ -1, 0, 1 \}^2$}
-				\State $a \gets a + M[j+1][i+1] \times G[x+i][y+j] \times \cos \left( 2 \times \theta[x+i][y+j] \right)$
-				\State $b \gets b + M[j+1][i+1] \times G[x+i][y+j] \times \sin \left( 2 \times \theta[x+i][y+j] \right)$
+				\State $a \gets a + M[j+1][i+1] \times G[x+i][y+j] \times \cos \left( 2 \times \Theta[x+i][y+j] \right)$
+				\State $b \gets b + M[j+1][i+1] \times G[x+i][y+j] \times \sin \left( 2 \times \Theta[x+i][y+j] \right)$
 			\EndFor
-			\State $\theta[x][y] \gets \arg \left( a + ib \right) \, / \, 2$
+			\State $\Theta[x][y] \gets \arg \left( a + ib \right) \, / \, 2$
 			\EndFunction
 		\end{algorithmic}
 	\end{algorithm}
 
-	The function calculates a weighted average of the gradient angle $\theta$ in a neighborhood of size $3 \times 3$ around the pixel $(x, y)$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient ($G$). In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient. The \figurename \ref{im:gsmooth} show the result of the previous algorithm.
+	The function calculates a weighted average of the gradient angle $\Theta$ in a neighborhood of size $3 \times 3$ around the pixel $(x, y)$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient ($G$). In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient. The \figurename \ref{im:gsmooth} show the result of the previous algorithm.
 	
 	\begin{figure}[h]
 		\centering
@@ -318,8 +318,84 @@
 	\vspace{-2.2mm} $$ y = ax + b \vspace{-2.2mm} $$ 
 	But this representation has some drawbacks. The parameters are not bounded if we consider all the lines passing through a rectangle. Fortunately, Duda and Hart have designed another representation that allows us to have bounded parameters $\rho$ and $\theta$:
 	\vspace{-2.2mm} $$ \rho = x \cos(\theta) + y \sin(\theta) \vspace{-2.2mm} $$
-	Thus $\rho$ represents the distance between the line and the origin except for the sign and $\theta$ represents the angle of the line normal. Let's call $D$ the length of the diagonal of the image. In the literature we generally take $\theta$ in $[0; \pi[$ and $\rho$ in $[-D; D]$. For my part, I preferred to take $theta$ in $[-\pi / 2; \pi]$ and $\rho$ in $[0; D]$.
+	Thus $\rho$ represents the distance between the line and the origin except for the sign and $\theta$ represents the angle of the line normal. Let's call $D$ the length of the diagonal of the image. In the literature we generally take $\theta$ in $[0; \pi[$ and $\rho$ in $[-D; D]$. For my part, I preferred to take $\theta$ in $[-\pi / 2; \pi]$ and $\rho$ in $[0; D]$. These domains cover the entire rectangle of the image, \textit{i.e.} $[0; W) \times[0; H)$.
 	
+	\paragraph{Algorithm}
+	The idea of the algorithm is to build a new image $H$, of size $R \times T$ where $R$ and $T$ are fixed using the dimensions of the original image. Then for each pixel of position $(x, y)$ of the gradient with a non-zero intensity, and for each $t \in[0; T)$ we calculate the distance at the origin, $\rho$ of the line of direction $\theta = 3 \pi / 2 \times t / T - \pi / 2$ passing by $ (x, y)$. We then let $r = R * \rho / D$ and we add a positive value to the pixel of coordinates $(r, t)$ in the image $H$ (\textsc{Algorithm} \ref{alg:hough}).
+	
+	\begin{algorithm}[h]
+		\caption{Hough Transform}
+		\label{alg:hough}
+		\begin{algorithmic}
+			\Function{Hough}{$G, \Theta$}
+			\State $H \gets $ Null image of size $R \times T$
+			\For{$(x, y) \in [0, W) \times [0; H) $ with $ G[x][y] > 0$}
+				\For{$t \in [0; T)$}
+					\State $\theta \gets 3 \pi / 2 \times t / T - \pi / 2$
+					\State $\rho \gets x . \cos(\theta) + y . \sin(\theta)$
+					\If{$\rho \geqslant 0$}
+						\State $r \gets \rho \times R / D$
+						\State $H[r][t] \gets H[r][t] + f(G, \Theta, \theta, x, y)$
+					\EndIf
+				\EndFor
+			\EndFor
+			\State \Return $H$
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+
+	\paragraph{}
+	When the image Hough transform is computed, lines are local maximums of $H$. To obtain these local maximums, I sort all the pixels of the transform in descending order and then take the pixels one by one and add them to a list $L$ of lines if the line corresponding to the pixel in question is far enough away from all the other lines already contained in the list $L$.
+	
+	\paragraph{}
+	The value $H[r][t]$ then corresponds approximately to the number of pixels of the gradient on the line parameterized by $r$ and $t$. I say approximately because of the function $f$. This function allows you to take into account the intensity of the gradient and the difference between the angle of the line and the angle of the gradient. I have designed the following function:
+	$$ f(G, \Theta, \theta, x, y) = \left( 1 - \left| \sin \left( \theta - \Theta[x][y] \right) \right|^{\frac{2}{3}}\right) \times \left( 1 + \frac{3}{2} \dfrac{G[x][y]}{\max (G)} \right) $$
+	
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}
+		\draw[->, thick] (0, 0) -- (4, 0) node[below] {x};
+		\draw[->, thick] (0, 0) -- (0, 4) node[left] {y};
+		\draw[very thick, red] (-0.2, 1.87) -- (3, 4);
+		\node[red] (a) at (0.66, 2.44) {\huge $+$};
+		\node[red] (b) at (1.5, 3) {\huge $+$};
+		\node[red] (c) at (2.33, 3.55) {\huge $+$};
+		\node[above left, red] at (a) {$A$};
+		\node[above left, red] at (b) {$B$};
+		\node[above left, red] at (c) {$C$};
+		\draw[very thick, green] (-0.2, 1) -- (4, 1);
+		\node[green] (a) at (1, 1) {\huge $\times$};
+		\node[green] (b) at (3, 1) {\huge $\times$};
+		\node[above=1mm, green] at (a) {$D$};
+		\node[above=1mm, green] at (b) {$E$};
+		
+		\draw[->, thick] (7, 0) -- (11.8, 0) node[below] {$\rho$};
+		\draw[->, thick] (7, 0) -- (7, 4) node[left] {$\theta$};
+		\draw[variable=\t, domain=-0.264:2.877, smooth, thick, red]
+			plot({7 + 0.66 * cos(\t*180/3.142) + 2.44 * sin(\t*180/3.142)}, {(\t + 1.571) / 4.713 * 4});
+		\draw[variable=\t, domain=-0.463:2.677, smooth, thick, red]
+			plot({7 + 1.5 * cos(\t*180/3.142) + 3 * sin(\t*180/3.142)}, {(\t + 1.571) / 4.713 * 4});
+		\draw[variable=\t, domain=-0.580:2.560, smooth, thick, red]
+			plot({7 + 2.33 * cos(\t*180/3.142) + 3.55 * sin(\t*180/3.142)}, {(\t + 1.571) / 4.713 * 4});
+		\node[red] at (9.75, 2.4) {A};
+		\node[red] at (10.6, 2.2) {B};
+		\node[red] at (11.5, 2) {C};
+		\draw[variable=\t, domain=-0.785:2.356, smooth, thick, green]
+			plot({7 + 1 * cos(\t*180/3.142) + 1 * sin(\t*180/3.142)}, {(\t + 1.571) / 4.713 * 4});
+		\draw[variable=\t, domain=-1.249:1.892, smooth, thick, green]
+			plot({7 + 3 * cos(\t*180/3.142) + 1 * sin(\t*180/3.142)}, {(\t + 1.571) / 4.713 * 4});
+		\node[green] at (8.1, 2) {D};
+		\node[green] at (9, 0.55) {E};
+		
+		\draw[->, thick] (6.2, 1.5) node[left] {line} -- (7.92, 2.62);
+		\draw[->, thick] (10.2, 3.7) node[right] {line} -- (8.83, 3.23);
+		\node at (2, -0.42) {\small Original Space};
+		\node at (9.4, -0.42) {\small Hough Space};
+		\end{tikzpicture}
+		\vspace{-0mm}
+		\caption{Hough Transform Example}
+		\label{im:houghe}
+	\end{figure}
 	
 	\begin{figure}[h]
 		\centering
