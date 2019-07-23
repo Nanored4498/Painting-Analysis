@@ -542,8 +542,8 @@ PA::LinesData* PA::get_lines(PA::ProblemData* data, const std::vector<std::pair<
 			double dm = cross ? (d0*d0 + d1*d1) / 2.0 / std::abs(d0 - d1) : std::abs(d0 + d1) / 2.0;
 			if(dm < lim_dist2) {
 				add = false;
-				if(dm > 0.25*lim_dist2) break;
-				double alpha = 10e4*cons/std::pow(diag, 1.8) * (1.0 - dm / (0.25*lim_dist2)) * res[ind] / (res[ind] + res[*ind_it]);
+				if(dm > 0.2*lim_dist2) break;
+				double alpha = 20e4*cons/std::pow(diag, 1.8) * (1.0 - dm / (0.25*lim_dist2)) * res[ind] / (res[ind] + res[*ind_it]);
 				res[*ind_it] += res[ind];
 				l.set((1 - alpha) * l.rho + alpha * r, (1 - alpha) * l.theta + alpha * t, true);
 				break;

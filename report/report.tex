@@ -143,6 +143,7 @@
 	% Need to talk about what I tried before hough transform (PCA on connex components)
 
 	\subsection{General description}
+	\label{s:general}
 	
 	\paragraph{}
 	Finding lines in an image can be broken down into several steps. For my part, I divided this task into four main steps. First I change the color space to switch from RGB space to CIE Lab space \cite{cielab}. Then I eliminate the noise and smooth the image while keeping the areas with high gradient. In the third step I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.
@@ -392,15 +393,48 @@
 		\node at (2, -0.42) {\small Original Space};
 		\node at (9.4, -0.42) {\small Hough Space};
 		\end{tikzpicture}
-		\vspace{-0mm}
+		\vspace{-1mm}
 		\caption{Hough Transform Example}
 		\label{im:houghe}
 	\end{figure}
+
+	The \figurename \ref{im:houghe} shows the curves where the Hough transform is strictly positive for five points sampled on two lines. The local maximums are located where the curves intersect. The two intersection points observed therefore correspond to the two lines that were sampled.
+	
+	\paragraph{Improvements}
+	This algorithm can be improved in many ways to reduce the computation time but also to improve the final result. Here are the main improvements I have implemented:
+	\begin{itemize}
+		\item We don't have to go through the whole spectrum of $\theta$ but just limit ourselves to a smaller window around $\Theta[x][y]$. This limits the computation time and prevents some pixels from contributing to a line that does not correspond at all to the orientation of the gradient.
+		\item After calculating $\rho$ for a given pixel and direction $\theta$, instead of taking $r$ as a rounding of $\rho \times R/D$ we can take the two integers $r_1 = \lfloor \rho \times R/D \rfloor$ and $r_2 = \lceil \rho \times R/D \rceil$ and add a portion from $f(G, \Theta, \theta, x, y)$ to $H[r_1][t]$ and $H[r_2][t]$.
+		\item The values $H[r][t]$ can be readjusted according to the distance that the line parameterized by $r$ and $t$ travels in the cut area of the image (see \figurename \ref{im:cut}).
+		\item Once you have found that the pixel $(r, t)$ of the Hough transform corresponds to a local maximum and therefore to a line, you can use the values of the Hough transform in a small neighbourhood of $(r, t)$ to readjust the parameters $\rho$ and $\theta$ of the corresponding line.
+	\end{itemize}
 	
 	\begin{figure}[h]
 		\centering
-		\includegraphics[scale=1.2]{hough_painting.png}
-		\caption{Hough Transform}
+		\begin{tikzpicture}
+		\node (a) at (0, 0) {\includegraphics[scale=1.15]{sobel_final.png}};
+		\node (b) at (8.3, 0) {\includegraphics[scale=1.15]{hough_painting.png}};
+		\draw[->, ultra thick] (a) -- node[above, align=center] {\small Hough \\[-1mm] \small trans.} (b);
+		\node at (4.15, -6.25) {\includegraphics[scale=1.32]{lines0.png}};
+		
+		\draw[->, thin, red] (10.8, -0.42) -- (7.8, -9.34);
+		\draw[->, thin, red] (10.555, -0.416) -- (7.33, -9.12);
+		\draw[->, thin, red] (10.04, -0.417) -- (7.15, -8.5);
+		\draw[->, thin, red] (5.95, 1.34) -- (2.8, -3.2);
+		\draw[->, thin, red] (6.06, -1.598) -- (1.35, -4.6);
+		\end{tikzpicture}
+		\caption{Hough Transform on painting}
+		\label{im:hough}
+	\end{figure}
+
+	\paragraph{}
+	On the \figurename \ref{im:hough} we can see what the transform gives on the painting we have been following since the beginning. Only the 20 best lines are displayed in the interface after clicking on the button to find the lines. But the user has the possibility to delete the lines that do not interest him with the right click and to add the lines that the Hough transform found without them being displayed by right-clicking approximately where the desired line should be. The user also has the possibility to drag the mouse to indicate approximately the direction of the line if the position of the click is not really accurate. As mentioned in the subsection \ref{s:general}, the user can then group the lines together to calculate the vanishing points and also to calculate the diagonals of the tiles. Diagonals are calculated by applying a PCA \cite{pca} to the intersections of the horizontal and depth lines. Finally, it is possible to save the result obtained in SVG format. The \figurename \ref{im:final} shows the result obtained for the painting we are following. It can then be seen that even if the vanishing line is not very horizontal, the perspective seems to be respected since the parallel lines all intersect well at the same point and all these vanishing points are on the same line.
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[scale=1.8]{final.png}
+		\caption{Final Result}
+		\label{im:final}
 	\end{figure}
 
 	\section{Attempt to redraw the paintings with a perfect perspective}

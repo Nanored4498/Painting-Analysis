@@ -1,9 +1,8 @@
 *.user
 build*
 .vscode
-*.png
 test
-ims
+/ims
 *.aux
 *.pdf
 *.log
