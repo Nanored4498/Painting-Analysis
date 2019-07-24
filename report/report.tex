@@ -527,7 +527,22 @@
 		\caption{Constructions of a few points for the function to be minimized}
 		\label{im:cons}
 	\end{figure}
-	We call $P_{A_0}$ the endpoint of the left-most line whose vanishing point is $A_0$ and $P'_{A_0}$ the endpoint of the right-most line whose vanishing point is $A_0$. We define $P_{B_0}$, $P'_{B_0}$, $P_{C_0}$ and $P'_{C_0}$ in the same way. Here I will only explain what I minimize for the lines whose vanishing points is $A$, but you can replace $A$ with $B$ or $C$ for the rest of the paragraph.
+	We call $P_{A_0}$ the endpoint of the left-most line whose vanishing point is $A_0$ and $P'_{A_0}$ the endpoint of the right-most line whose vanishing point is $A_0$. We define $P_{B_0}$, $P'_{B_0}$, $P_{C_0}$ and $P'_{C_0}$ in the same way. Here I will only explain what I minimize for the lines whose vanishing points is $A$, but you can replace $A$ with $B$ or $C$ for the rest of the paragraph. We can also define the unit vanishing line direction vector $\vec{u}$ by the normalization of $\overrightarrow{AC}$. Then we can obtain the normal unit vector $\vec{n}$ by a simple rotation of minus 90 degrees. Now our goal is to compute the distance between $P'_{A_0}$ and the new right-most line assuming that the left-most line passes through $P_{A_0}$. To do this, we use the fact that the intersections of lines whose vanishing point is $A$ with the line $(D)$ (the one parallel to the vanishing line and located at a distance $d_{trans}$ from it) are spaced from the distance $d_A$. Thus we define $P_A$ as the intersection between $(D)$ and $(A P_{A_0})$:
+	$$ P_A = A + d_{trans} \, / \, \left( \vec{n} . \overrightarrow{A P_{A_0}} \right) \times \overrightarrow{A P_{A_0}} $$
+	Therefore the right-most line passes through the point $P'_A$ defined by:
+	$$ P'_A = P_A + (n_A - 1) \times d_A \times \vec{u} $$
+	We finally get the wanted distance:
+	$$ dist((A P'_A), \, P'_{A_0}) = \left| \det \begin{bmatrix} \overrightarrow{P'_A P'_{A_0}} & \overrightarrow{A P'_A} \end{bmatrix} \right| \; / \; \left\| \overrightarrow{A P'_A} \right\| $$
+	The last term that we need to minimize is then:
+	\begin{equation}
+		\label{eq:T}
+		T = dist((A P'_A), \, P'_{A_0})^2 + dist((B P'_B), \, P'_{B_0})^2 + dist((C P'_C), \, P'_{C_0})^2
+	\end{equation}
+	
+	\paragraph{}
+	Thanks to the equation \eqref{eq:R}, \eqref{eq:S} and \eqref{eq:T} we obtain the function to minimize:
+	$$ F(x_A, y_A, x_C, y_C, d_A, d_C) = c^{te} . R \, + \, v . S \, + \, v . T $$
+	This minimization is done using the Newton Raphson's method. With my way of initializing variables (which I will not detail) it generally takes no more than 3 steps of this method to converge.
 
 	\section{Conclusion}
 	
