@@ -434,7 +434,7 @@
 	
 	\begin{figure}[h]
 		\centering
-		\includegraphics[scale=1.9]{final.png}
+		\includegraphics[scale=2]{final.png}
 		\caption{Final Result}
 		\label{im:final}
 	\end{figure}
@@ -457,19 +457,77 @@
 	\paragraph{}
 	For the first step I parametrize the perspective with the coordinates of the points $A$, $B$ and $C$ and with the distances $d_A$, $d_B$ and $d_C$ (see \figurename \ref{im:tiledfloor}) between the intersections of the paintings lines with a line parallel to the vanishing line and located at a distance $d_{trans}$ from it. Thanks to the equations \eqref{eq:B} and \eqref{eq:dB} we can remove $B$ and $d_B$ from our parametrization. We then have 6 parameters to optimize:
 	\vspace{-1mm} $$ x_A, \, y_A, \, x_C, \, y_C, \, d_A, \, d_C \vspace{-1mm} $$
-	I have broken down the function that these parameters should minimize into the sum of three sub-functions explained in the next paragraphs. In the following I will use $c^{te}$ to designate a constant whose value won't be given in order not to overload the expression with uninteresting details. And I will also use $var$ to designate an expression that does not depend on the parameters to be minimized but that is dependent on the lines of the painting to which we are trying to be the closest.
+	I have broken down the function that these parameters should minimize into the sum of three sub-functions explained in the next paragraphs. In the following I will use $c^{te}$ to designate a constant whose value won't be given in order not to overload the expression with uninteresting details. And I will also use $v$ to designate an expression that does not depend on the parameters to be minimized but that is dependent on the lines of the painting to which we are trying to be the closest.
 	
 	\paragraph{}
 	In order to have a horizontal vanishing line and in order to have well oriented tiles, I try to minimize the following value:
 	\begin{equation}
 		\label{eq:R}
-		R = \dfrac{(y_C - y_A)^2}{(x_C - x_A)^2 + (y_C - y_A)2} \times \left( var . (d_C - d_A)^2 + c^{te} \right)
+		R = \dfrac{(y_C - y_A)^2}{(x_C - x_A)^2 + (y_C - y_A)2} \times \left( v . (d_C - d_A)^2 + c^{te} \right)
 	\end{equation}
 	So that the vanishing points do not diverge too much, I minimize also this expression:
 	\begin{equation}
 		\label{eq:S}
-		S = var . (x_A - x_{A_0})^2 + var . (y_A - y_{A_0})^2 + var . (x_B - x_{B_0})^2 + var . (y_B - y_{B_0})^2 + var . (x_C - x_{C_0})^2 + var . (y_C - y_{C_0})^2
+		S = v . (x_A - x_{A_0})^2 + v . (y_A - y_{A_0})^2 + v . (x_B - x_{B_0})^2 + v . (y_B - y_{B_0})^2 + v . (x_C - x_{C_0})^2 + v . (y_C - y_{C_0})^2
 	\end{equation}
+	Where $B$ and $d_B$ are still given by the equations \eqref{eq:B} and \eqref{eq:dB}. The points $A_0$, $B_0$ and $C_0$ are the vanishing points obtained in the previous section, the ones that are represented by red dots in the \figurename \ref{im:final}.
+	
+	\paragraph{}
+	The last expression to minimize is the most complicated one. With the two previous expressions $R$ and $S$ we only take care of the vanishing line and the vanishing points but we don't take care of the position of the lines in the paintings. In order not to have something too complicated to optimize, I decided to make sure that for each group of parallel lines, the endpoints of the right-most line and the left-most line match as closely as possible with the endpoints of initial lines.
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}[scale=0.9]
+			\node at (1.5, 4.7) {\small Lines from the previous part};
+			\draw (-2, 4.5) -- (-2, 0) -- (5, 0) -- (5, 4.5);
+			\draw[blue, thick] (-3, 3.5) -- (6, 4.5) ;
+			\node[red] at (0, 3.83) {$\bullet$};
+			\node[red, above] at (0, 3.83) {$A_0$};
+			\node at (0.657, 0) {$\bullet$};
+			\node[below] at (0.657, 0) {$P_{A_0}$};
+			\node at (5, 0.651) {$\bullet$};
+			\node[right] at (5, 0.651) {$P'_{A_0}$};
+			\node[red, below] at (3, 0) {\footnotesize $n_A = 8 \text{ lines}$};
+					
+			\begin{scope}
+			\clip (-2, 4.5) rectangle (5, 0);
+			\foreach \i in {0, ..., 7} \draw[red] (0, 3.83) -- ({0.994*\i + 1}, {0.11*\i - 2});
+			\end{scope}
+			
+			\node[blue] at (6.25, 4.1) {\scriptsize Vanishing Line};
+			\node[] at (6.25, 2.25) {\scriptsize Image Border};
+			
+			\node at (10.75, 4.7) {\small New lines};
+			\draw (7.5, 4.5) -- (7.5, 0) -- (14.5, 0) -- (14.5, 4.5);
+			\draw[blue, thick] (6.5, 3.85) -- (15.5, 4.45);
+			\draw[blue, thick] (6.5, 0.4) --
+				node[pos=0.05, above] {\footnotesize $(D)$}
+				node[pos=0.58, sloped, above] {\footnotesize
+					$\color{black} ({\color{red} n_A} - 1) \times {\color{purple} d_A}$}
+				(15.5, 1);
+			\draw (8.5, 3.983) -- node[left, below, sloped] {\scriptsize $d_{trans}$} (8.729, 0.549);
+			\node[purple] at (8.75, 4) {$\bullet$};
+			\node[purple, above] at (8.75, 4) {$A$};
+			\node at (10.157, 0) {$\bullet$};
+			\node[below] at (10.157, 0) {$P_{A_0}$};
+			\node at (14.5, 0.651) {$\bullet$};
+			\node[right] at (14.5, 0.651) {$P'_{A_0}$};
+			
+			\node[purple] at (9.936, 0.629) {$\bullet$};
+			\node[purple, above right] at (9.936, 0.629) {$P_A$};
+			\node[purple] at (13.608, 0.874) {$\bullet$};
+			\node[purple, above] at (13.608, 0.874) {$P'_A$};
+			
+			\draw[ultra thick, brown, ->] (13.25, 4.3) -- node[above] {\footnotesize $\vec{u}$} (14, 4.35);
+			\draw[ultra thick, brown, ->] (13.25, 4.3) -- node[left] {\footnotesize $\vec{n}$} (13.3, 3.55);
+			
+			\draw[purple] (8.75, 4) -- (10.157, 0);
+			\draw[purple] (8.75, 4) -- (14.5, 0.3);
+		\end{tikzpicture}
+		\vspace{-5mm}
+		\caption{Constructions of a few points for the function to be minimized}
+		\label{im:cons}
+	\end{figure}
+	We call $P_{A_0}$ the endpoint of the left-most line whose vanishing point is $A_0$ and $P'_{A_0}$ the endpoint of the right-most line whose vanishing point is $A_0$. We define $P_{B_0}$, $P'_{B_0}$, $P_{C_0}$ and $P'_{C_0}$ in the same way. Here I will only explain what I minimize for the lines whose vanishing points is $A$, but you can replace $A$ with $B$ or $C$ for the rest of the paragraph.
 
 	\section{Conclusion}
 	
