@@ -3,7 +3,7 @@
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{kpfonts}
-\usepackage[left=2.8cm, right=2.8cm, top=2.8cm, bottom=3cm]{geometry}
+\usepackage[left=2.75cm, right=2.75cm, top=2.8cm, bottom=3cm]{geometry}
 \usepackage{titling}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -128,11 +128,13 @@
 	\begin{center}
 		\begin{minipage}{0.3\linewidth}
 			\begin{equation}
+			\label{eq:B}
 			{\color{blue} B} = \dfrac{{\color{green} d_C} {\color{red} A} + {\color{red} d_A} {\color{green} C}}{{\color{red} d_A} + {\color{green} d_C}}
 			\end{equation}
 		\end{minipage}
 		\begin{minipage}{0.3\linewidth}
 			\begin{equation}
+			\label{eq:dB}
 			{\color{blue} d_B} = 2 \dfrac{{\color{red} d_A} {\color{green} d_C}}{{\color{red} d_A} + {\color{green} d_C}}
 			\end{equation}
 		\end{minipage}
@@ -428,16 +430,46 @@
 	\end{figure}
 
 	\paragraph{}
-	On the \figurename \ref{im:hough} we can see what the transform gives on the painting we have been following since the beginning. Only the 20 best lines are displayed in the interface after clicking on the button to find the lines. But the user has the possibility to delete the lines that do not interest him with the right click and to add the lines that the Hough transform found without them being displayed by right-clicking approximately where the desired line should be. The user also has the possibility to drag the mouse to indicate approximately the direction of the line if the position of the click is not really accurate. As mentioned in the subsection \ref{s:general}, the user can then group the lines together to calculate the vanishing points and also to calculate the diagonals of the tiles. Diagonals are calculated by applying a PCA \cite{pca} to the intersections of the horizontal and depth lines. Finally, it is possible to save the result obtained in SVG format. The \figurename \ref{im:final} shows the result obtained for the painting we are following. It can then be seen that even if the vanishing line is not very horizontal, the perspective seems to be respected since the parallel lines all intersect well at the same point and all these vanishing points are on the same line.
+	On the \figurename \ref{im:hough} we can see what the transform gives on the painting we have been following since the beginning. Only the 20 best lines are displayed in the interface after clicking on the button to find the lines. But the user has the possibility to delete the lines that do not interest him with the right click and to add the lines that the Hough transform found without them being displayed by right-clicking approximately where the desired line should be. The user also has the possibility to drag the mouse to indicate approximately the direction of the line if the position of the click is not really accurate. As mentioned in the subsection \ref{s:general}, the user can then group the lines together to calculate the vanishing points (they are computed by minimizing the average square distances with the group lines) and also to calculate the diagonals of the tiles. Diagonals are calculated by applying a PCA \cite{pca} to the intersections of the horizontal and depth lines. Finally, it is possible to save the result obtained in SVG format. The \figurename \ref{im:final} shows the result obtained for the painting we are following. It can then be seen that even if the vanishing line is not very horizontal, the perspective seems to be respected since the parallel lines all intersect well at the same point and all these vanishing points are on the same line.
 	
 	\begin{figure}[h]
 		\centering
-		\includegraphics[scale=1.8]{final.png}
+		\includegraphics[scale=1.9]{final.png}
 		\caption{Final Result}
 		\label{im:final}
 	\end{figure}
 
+	\paragraph{}
+	Results on different paintings are given in the appendices. I also give for some of them the difference obtained between the lines drawn by my algorithm and the lines drawn by Ricardo (one of my tutors). \\
+	Finally, we would also like to know how close or far away the painting is to a perfect perspective. Moreover, my algorithm is not necessarily very precise and therefore it can be interesting to see that a perfect perspective can be very close to the painting. This is the purpose of the next section. 
+
 	\section{Attempt to redraw the paintings with a perfect perspective}
+	
+	\paragraph{}
+	Elmar suggested I use the paper \textit{Structure preserving manipulation of photographs} \cite{redraw} that allows us to modify an image by using the its gradient. The idea is then to do the following steps starting from the lines obtained in the previous section:
+	\begin{itemize}
+		\item Calculate new lines for the tiles that would all intersect exactly at a single vanishing point and remain as close as possible to the previously obtained lines.
+		\item Modify the gradient of the image so that the high intensity pixels are on the new lines.
+		\item Use Poisson editing \cite{poisson} to obtain the new image with perfect perspective from the new gradient.
+	\end{itemize}
+	Unfortunately, I didn't get anything conclusive for this second step. I will therefore only describe what I was able to do for the first step.
+	
+	\paragraph{}
+	For the first step I parametrize the perspective with the coordinates of the points $A$, $B$ and $C$ and with the distances $d_A$, $d_B$ and $d_C$ (see \figurename \ref{im:tiledfloor}) between the intersections of the paintings lines with a line parallel to the vanishing line and located at a distance $d_{trans}$ from it. Thanks to the equations \eqref{eq:B} and \eqref{eq:dB} we can remove $B$ and $d_B$ from our parametrization. We then have 6 parameters to optimize:
+	\vspace{-1mm} $$ x_A, \, y_A, \, x_C, \, y_C, \, d_A, \, d_C \vspace{-1mm} $$
+	I have broken down the function that these parameters should minimize into the sum of three sub-functions explained in the next paragraphs. In the following I will use $c^{te}$ to designate a constant whose value won't be given in order not to overload the expression with uninteresting details. And I will also use $var$ to designate an expression that does not depend on the parameters to be minimized but that is dependent on the lines of the painting to which we are trying to be the closest.
+	
+	\paragraph{}
+	In order to have a horizontal vanishing line and in order to have well oriented tiles, I try to minimize the following value:
+	\begin{equation}
+		\label{eq:R}
+		R = \dfrac{(y_C - y_A)^2}{(x_C - x_A)^2 + (y_C - y_A)2} \times \left( var . (d_C - d_A)^2 + c^{te} \right)
+	\end{equation}
+	So that the vanishing points do not diverge too much, I minimize also this expression:
+	\begin{equation}
+		\label{eq:S}
+		S = var . (x_A - x_{A_0})^2 + var . (y_A - y_{A_0})^2 + var . (x_B - x_{B_0})^2 + var . (y_B - y_{B_0})^2 + var . (x_C - x_{C_0})^2 + var . (y_C - y_{C_0})^2
+	\end{equation}
 
 	\section{Conclusion}
 	

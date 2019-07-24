@@ -171,9 +171,9 @@ def main():
 	# Compute a new horizon and a bottom line
 	gs = sorted(dots.keys(), key=lambda g: dots[g][0])
 	dx = 0.5 * (dots[gs[2]][0] - dots[gs[0]][0])
-	a = (dots[gs[0]][0] + center_coeff * dots[gs[1]][0] + dots[gs[2]][0]) / (2 + center_coeff) - dx
+	a = (dots[gs[0]][0] + center_coeff * dots[gs[1]][0] + dots[gs[2]][0]) / (2 + center_coeff)
 	dy = 0.5 * (dots[gs[2]][1] - dots[gs[0]][1])
-	b = (dots[gs[0]][1] + center_coeff * dots[gs[1]][1] + dots[gs[2]][1]) / (2 + center_coeff) - dy
+	b = (dots[gs[0]][1] + center_coeff * dots[gs[1]][1] + dots[gs[2]][1]) / (2 + center_coeff)
 	horizon2 = Line(a-3*dx, b-3*dy, a+3*dx, b+3*dy, horizon._col)
 	y_translation = im_bot - 0.5 * (horizon2.y(im_x) + horizon2.y(im_right))
 	d_translation = dx * y_translation / (dx**2 + dy**2) ** 0.5
