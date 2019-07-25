@@ -11,6 +11,7 @@
 \usepackage{amsmath}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{wrapfig}
 
 \graphicspath{{ims/}}
 
@@ -440,8 +441,7 @@
 	\end{figure}
 
 	\paragraph{}
-	Results on different paintings are given in the appendices. I also give for some of them the difference obtained between the lines drawn by my algorithm and the lines drawn by Ricardo (one of my tutors). \\
-	Finally, we would also like to know how close or far away the painting is to a perfect perspective. Moreover, my algorithm is not necessarily very precise and therefore it can be interesting to see that a perfect perspective can be very close to the painting. This is the purpose of the next section. 
+	Results on different paintings are given in the appendices. I also give for some of them the difference obtained between the lines drawn by my algorithm and the lines drawn by Ricardo (one of my tutors).	Finally, we would also like to know how close or far away the painting is to a perfect perspective. Indeed, we would like to know if it is possible that the artist made small inaccuracies or if he did not completely take into account the rules of perspective. Moreover, my algorithm is not necessarily very precise and therefore it can be interesting to see that a perfect perspective can be very close to the painting. This is the purpose of the next section. 
 
 	\section{Attempt to redraw the paintings with a perfect perspective}
 	
@@ -543,10 +543,39 @@
 	Thanks to the equation \eqref{eq:R}, \eqref{eq:S} and \eqref{eq:T} we obtain the function to minimize:
 	$$ F(x_A, y_A, x_C, y_C, d_A, d_C) = c^{te} . R \, + \, v . S \, + \, v . T $$
 	This minimization is done using the Newton Raphson's method. With my way of initializing variables (which I will not detail) it generally takes no more than 3 steps of this method to converge.
+	
+	\begin{wrapfigure}{r}{2.9cm}
+		\centering
+		\begin{tikzpicture}[scale=1.25]
+		\begin{scope}
+		\clip (0.33, 0.8) rectangle (1.4, 0);
+		\draw[red] (0, 1) -- (1.55, 0);
+		\draw[blue] (0.66, 1) -- (0.96, 0);
+		\draw[green] (1.3, 1) -- (0.72, 0);
+		\end{scope}
+		\node[red] at (0.865, -0.17) {\scriptsize wrong};
+		
+		\begin{scope}
+		\clip (1.5, 0.8) rectangle (2.57, 0);
+		\draw[red] (1.2, 1) -- (2.69, 0);
+		\draw[blue] (1.86, 1) -- (2.26, 0);
+		\draw[green] (2.5, 1) -- (1.84, 0);
+		\end{scope}
+		\node[green] at (2.065, -0.12) {\scriptsize Ok};
+		\end{tikzpicture}
+		\vspace{-5mm}
+	\end{wrapfigure}
+	Once the six parameters have been optimized, we actually obtain lines that remain close to the initial lines. But there is one thing wrong with it. Lines from the vanishing points $A$, $B$ and $C$ do not all intersect at the same time. There is a slight difference between the intersections of these lines two by two. I then slightly shift each group of lines along the direction of the vanishing line to ensure that the three groups intersect at the same time. Once this problem is solved, we obtain the result in the \figurename \ref{im:perf}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[scale=0.28]{perf.jpg}
+		\vspace{-2mm}
+		\caption{Result of the perfect perspective}
+		\label{im:perf}
+	\end{figure}
 
 	\section{Conclusion}
-	
-	As a conclusion I did nothing during this internship !
 	
 	\appendix
 	
