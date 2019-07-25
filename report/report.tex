@@ -54,7 +54,7 @@
 	\end{figure}
 
 	In a Delft museum, paintings by Pieter de Hooch are on display. It is quite easy to notice that some pairs of paintings are very similar (e.g. \figurename \ref{im:pair}). One hypothesis that would explain this strangeness is the possibility that another painter copied Pieter de Hooch's paintings. Looking at the pairs in more detail, we can notice that quite often one painting respects the rules of perspective well and the other does not respect them. This gives credibility to the hypothesis of the existence of another painter. But the human tends to be biased to check that in each pair, one painting respects the rules of perspective and the other does not. Then comes the need to create a tool to check whether the perspective is respected in a painting with as little human intervention as possible. The goal of this internship was therefore to create a graphical interface to verify the perspective in a painting with as much automation as possible. \\
-	Tools already exist to find lines in an image. The most common and the one I used is the Hough transform \cite{hough}. I will describe the algorithms used to create my interface in this report. In most paintings there is a tiled floor and it is mainly the lines of the tiles that I studied. The development of a graphical user interface with minimal user control was necessary because there is no guarantee that a fully automated program will do exactly what we want. Much of the internship was used to learn how to make a graphical interface with Qt and to design an interface that is easily usable. But I'm not going to describe how this interface works, I'll just give some implemented features inside this report.
+	Tools already exist to find lines in an image. The most common and the one I used is the Hough transform \cite{hough}. I will describe the algorithms used to create my interface in this report. In most paintings there is a tiled floor and it is mainly the lines of the tiles that I studied. The development of a graphical user interface with minimal user control was necessary because there is no guarantee that a fully automated program will do exactly what we want. Part of the internship was used to learn how to make a graphical interface with Qt and to design an interface that is easily usable. But I'm not going to describe how this interface works, I'll just give some implemented features inside this report.
 
 	\vspace{3cm}
 	\begin{center}
@@ -86,9 +86,10 @@
 			\node[below, red] at (5, 2.25) {\small Vanishing Line};
 			\node[left, green] at (0.4, 1.4) {\small Parallel lines};
 		\end{tikzpicture}
+		\vspace{-2mm}
 		\caption{Illustration of the perspective rules}
 	\end{figure}
-	\vspace{-5mm}
+	\vspace{-2mm}
 
 	\subsection{Special case of a tiled floor}
 	
@@ -119,7 +120,7 @@
 		\foreach \i in {-4, -2, ..., 10} \draw[green] (12, 6) -- (\i, 0);
 		\foreach \i in {4, 8, ..., 24} \draw[blue] (-12, 6) -- (\i, 0);
 		\end{tikzpicture}
-		\vspace{-2mm}
+		\vspace{-3mm}
 		\caption{Tiled floor in perspective}
 		\label{im:tiledfloor}
 	\end{figure}
@@ -149,7 +150,7 @@
 	\label{s:general}
 	
 	\paragraph{}
-	Finding lines in an image can be broken down into several steps. For my part, I divided this task into four main steps. First I change the color space to switch from RGB space to CIE Lab space \cite{cielab}. Then I eliminate the noise and smooth the image while keeping the areas with high gradient. In the third step I calculate in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.
+	Finding lines in an image can be broken down into several steps. For my part, I divided this task into four main steps. First I change the color space to switch from RGB space to CIE Lab space \cite{cielab}. Then I eliminate the noise and smooth the image while keeping the areas with high gradient. In the third step I compute in each pixel of the image the direction and amplitude of the gradient. I leave some user control over the value of some thresholds used in this step. In addition, the user has the possibility to erase certain parts of the gradient that are not interesting to study perspective. Finally, the last step consists in applying the Hough transform to the gradient. The local maxima of this transformation then give us the lines contained in the image.
 	
 	Once the user has obtained the lines of the image he has the possibility to make groups in order to calculate the vanishing points, the vanishing line but also to calculate the diagonals of a tiled floor as we could see in the previous part. Once the user has finished this part he can judge if the perspective is well respected.
 	
@@ -159,7 +160,7 @@
 	At the beginning of my experiments I did not make any color space changes. The gradient of the image was calculated in the RGB space well known to all. In this space the colors are represented by three bytes, representing respectively the intensity of red, green and blue in the color. Unfortunately for some paintings, the amplitude of the gradient obtained did not necessarily match what I observed with the naked eye. My algorithm could return a high gradient where I could only see a slight color change and return a low gradient where I could see a boundary between two distinct colors. One of the concerns of RGB space, for example, is that it does not take into account the fact that the human eye is less sensitive to the color blue than to the color green.
 	
 	\paragraph{}
-	The CIELAB space \cite{cielab} allows you to correct this problem. Indeed, the Euclidean distance in this space corresponds well to the difference in colour that a human observes with his eyes. It is a space more in line with human vision. The three coordinates of CIELAB represent the lightness of the color ($L^* = 0$ yields black and $L^* = 100$ indicates diffuse white), its position between red/magenta and green ($a^*$, negative values indicate green while positive values indicate magenta) and its position between yellow and blue ($b^*$, negative values indicate blue and positive values indicate yellow). Thus the difference between two colors $(L_1^*, a_1^*, b_1^*)$ and $(L_2^*, a_2^*, b_2^*)$ is given by the Euclidean distance:
+	The CIELAB space \cite{cielab} allows you to correct this problem. Indeed, the Euclidean distance in this space corresponds well to the difference in color that a human observes with his eyes. It is a space more in line with human vision. The three coordinates of CIELAB represent the lightness of the color ($L^* = 0$ yields black and $L^* = 100$ indicates diffuse white), its position between red/magenta and green ($a^*$, negative values indicate green while positive values indicate magenta) and its position between yellow and blue ($b^*$, negative values indicate blue and positive values indicate yellow). Thus the difference between two colors $(L_1^*, a_1^*, b_1^*)$ and $(L_2^*, a_2^*, b_2^*)$ is given by the Euclidean distance:
 	$$ \Delta E = \sqrt{(L_1^* - L_2^*)^2 + (a_1^* - a_2^*)^2 + (b_1^* - b_2^*)^2} $$
 	
 	\paragraph{}
@@ -168,9 +169,9 @@
 	\subsection{Smoothing}
 	
 	\paragraph{}
-	Smoothing is often important in image processing because it allows noise to disappear. There are many filters known to perform smoothing. There is for example the median filter which replaces each pixel by the median value on a neighbourhood, or the very used Gaussian filter which has the particularity to be applied with a low complexity thanks to a Fourrier transform. The Gaussian filter performs a weighted average of the neighboring pixels. This weighting is done using a Gaussian with a standard deviation $\sigma$. Averages are taken individually on each component of the color space. If we consider an image $I : \N \times \N \rightarrow \R$ which associates real values to integer coordinates, then applying a gaussian filter of standard deviation $\sigma$ gives the followin image $I'$:
+	Smoothing is often important in image processing because it allows noise to disappear. There are many filters known to perform smoothing. There is for example the median filter which replaces each pixel by the median value on a neighborhood, or the very used Gaussian filter which has the particularity to be applied with a low complexity thanks to a Fourrier transform. The Gaussian filter performs a weighted average of the neighboring pixels. This weighting is done using a Gaussian with a standard deviation $\sigma$. Averages are taken individually on each component of the color space. If we consider an image $I : \N \times \N \rightarrow \R$ which associates real values to integer coordinates, then applying a Gaussian filter of standard deviation $\sigma$ gives the following image $I'$:
 	$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z') \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma^2} \right) $$
-	Where $\Omega_{z}$ is a window around $z \in \N^2$ and $W = \sum_{z' \in \Omega_{z}} \exp \left( - \frac{\| z - z'\|^2}{2 \sigma^2} \right)$ is a factor of normalization. Since it is a convolution product, this can be computed in the Fourier space with a pointwise product. That's the big advantage of this filter. The problem is that it could erase borders that would be useful for finding the lines in the image.
+	Where $\Omega_{z}$ is a window around $z \in \N^2$ and $W = \sum_{z' \in \Omega_{z}} \exp \left( - \frac{\| z - z'\|^2}{2 \sigma^2} \right)$ is a factor of normalization. Since it is a convolution product, this can be computed in the Fourier space with a point-wise product. That's the big advantage of this filter. The problem is that it could erase borders that would be useful for finding the lines in the image.
 	
 	\paragraph{}
 	One solution to overcome these important edge disappearances is to use a bilateral filter \cite{bil}. This filter is defined using two functions $f: \N^2 \times \N^2 \rightarrow \R$ and $g: \R \times \R \rightarrow \R$ and gives the following image:
@@ -220,7 +221,7 @@
 	$$
 	Where $G_{C, x}$ and $G_{C, y}$ are are respectively the discrete horizontal and vertical gradients of the component $C$. We can then compute the norm of the gradient in this component:
 	$$ G_C = \sqrt{G_{C, x}^2 + G_{C, y}^2} $$
-	As only the direction of the gradient and not the orientation of the gradient interests us, we want to calculate the angle of the gradient modulo $\pi$ instead of $2 \pi$. We then defines $(G_{C, x}', \, G_{C, y}')$ equal to $(G_{C, x}, \, G_{C, y})$ if $G_{C, x} \geqslant 0$ or to $(-G_{C, x}, \, -G_{C, y})$ otherwise. Finally, the norm $G$ and the angle $\Theta$ of the gradient are obtained as follows:
+	As only the direction of the gradient and not the orientation of the gradient interests us, we want to compute the angle of the gradient modulo $\pi$ instead of $2 \pi$. We then defines $(G_{C, x}', \, G_{C, y}')$ equal to $(G_{C, x}, \, G_{C, y})$ if $G_{C, x} \geqslant 0$ or to $(-G_{C, x}, \, -G_{C, y})$ otherwise. Finally, the norm $G$ and the angle $\Theta$ of the gradient are obtained as follows:
 	$$ G = \sqrt{G_{L^*} + G_{a^*} + G_{b^*}} \qquad \Theta = \arg \left( G_{L^*} G_{L^*, x}' + G_{a^*} G_{a^*, x}' + G_{b^*} G_{b^*, x}' + i \left( G_{L^*} G_{L^*, y}' + G_{a^*} G_{a^*, y}' + G_{b^*} G_{b^*, y}' \right) \right)$$
 	
 	\begin{figure}[h]
@@ -236,10 +237,10 @@
 	\vspace{-2mm}
 
 	\paragraph{}
-	The \figurename \ref{im:sob} we can see the result obtain on the same painting used in the previous part about smoothing (I will use this painting throughout the explanation of the algorithm). The image on the left is the smoothed paint from the previous part and the one on the right is the image representing the gradient. For each pixel, the intensity of the color represents the norm of the gradient. In the image I give, the intensity is proportional to the square root of the norm. This choice was made so that it could be seen that despite the smoothing done previously, the gradient norm is not zero inside the tiles. The color gives the angle of the gradient. Red for $0+\Z \pi$, green for $\pi / 3 + \Z \pi$ and blue for $2\pi / 3 + \Z \pi$.
+	In the \figurename \ref{im:sob} we can see the result obtained on the same painting used in the previous part about smoothing (I will use this painting throughout the explanation of the algorithm). The image on the left is the smoothed paint from the previous part and the one on the right is the image representing the gradient. For each pixel, the intensity of the color represents the norm of the gradient. In the image I give, the intensity is proportional to the square root of the norm. This choice was made so that it could be seen that despite the smoothing done previously, the gradient norm is not zero inside the tiles. The color gives the angle of the gradient. Red for $0+\Z \pi$, green for $\pi / 3 + \Z \pi$ and blue for $2\pi / 3 + \Z \pi$.
 	
 	\paragraph{Automatic cleaning}
-	To eliminate the remaining noise and make the rest easier, I clean the image a little bit. To do so, I apply a threshold that will zero all pixels in the gradient whose intensity is less than a certain value. Then I calculate the connected components of the remaining pixels and zero all pixels of the connected components that have a size smaller than a minimum size. I have a function that calculates the intensity threshold and minimum size of the related components based on the characteristics of the image. Unfortunately, these two values are not always perfect. I therefore allow the user to modify these values if necessary using sliders. The effect of this cleaning is illustrated in \figurename \ref{im:clean}.
+	To eliminate the remaining noise and make the rest easier, I clean the image a little bit. To do so, I apply a threshold that will zero all pixels in the gradient whose intensity is less than a certain value. Then I compute the connected components of the remaining pixels and zero all pixels of the connected components that have a size smaller than a minimum size. I have a function that calculates the intensity threshold and minimum size of the related components based on the characteristics of the image. Unfortunately, these two values are not always perfect. I therefore allow the user to modify these values if necessary using sliders. The effect of this cleaning is illustrated in \figurename \ref{im:clean}.
 	
 	\begin{figure}[h]
 		\centering
@@ -280,7 +281,7 @@
 		\end{algorithmic}
 	\end{algorithm}
 
-	The function calculates a weighted average of the gradient angle $\Theta$ in a neighborhood of size $3 \times 3$ around the pixel $(x, y)$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient ($G$). In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient. The \figurename \ref{im:gsmooth} show the result of the previous algorithm.
+	The function computes a weighted average of the gradient angle $\Theta$ in a neighborhood of size $3 \times 3$ around the pixel $(x, y)$. The weight depends on the distance (thanks to the $M$ matrix) and the amplitude of the gradient ($G$). In addition, the factor 2 that appears in the cosine and sinus comes from the fact that we consider angles modulo $\pi$. Finally, because a single step of this smoothing is not enough, this algorithm is called several times. For example, for the paint that we use as an example, we apply 5 times the smoothing. For higher resolution images (because this one is low resolution), I can apply up to 15 smoothing steps for the gradient. The \figurename \ref{im:gsmooth} shows the result of the previous algorithm.
 	
 	\begin{figure}[h]
 		\centering
@@ -295,7 +296,7 @@
 		\label{im:gsmooth}
 	\end{figure}
 
-	\paragraph{Manual cleaning} Because there may be objects on the floor of the paint or sometimes because the noise is too high or the paint is damaged (for the high quality images I may have had) there may be undesirable parts left in the gradient image. That's why I'm leaving user control again. There is the possibility of using a brush to remove unwanted parts. The user can choose the size of the brush and erase bad brush strokes that he could have given. The \figurename \ref{im:brush} illustrates this tool. White pixels are the erased gradient pixels.
+	\paragraph{Manual cleaning} Because there may be objects on the floor of the paint or sometimes because the noise is too high (or because we can see some damages on the paints of high quality) there may be undesirable parts left in the gradient image. That's why I'm leaving user control again. There is the possibility of using a brush to remove unwanted parts. The user can choose the size of the brush and erase bad brush strokes that he could have given. The \figurename \ref{im:brush} illustrates this tool. White pixels are the erased gradient pixels.
 	
 	\begin{figure}[h]
 		\centering
@@ -312,7 +313,7 @@
 	\subsection{Hough Transform}
 	
 	\paragraph{A first try}
-	Before using Hough's transform I tried something else that I will describe in a few lines in this paragraph. We are trying to find the main lines that make up the image. My idea was to calculate connected components on the pixels of the gradient. I considered two pixels, adjacent if they touched each other and if their gradient angle difference was less than a certain value. Then I performed a PCA (Principal Component Analysis) \cite{pca} on each connected component in order to obtain equations of lines corresponding to the main direction of each component. Then I merged all the related components for which the guide lines were close and re-performed a PCA again to obtain new, more precise line equations.
+	Before using Hough's transform I tried something else that I will describe in a few lines in this paragraph. We are trying to find the main lines that make up the image. My idea was to compute connected components on the pixels of the gradient. I considered two pixels, adjacent if they touched each other and if their gradient angle difference was less than a certain value. Then I performed a PCA (Principal Component Analysis) \cite{pca} on each connected component in order to obtain equations of lines corresponding to the main direction of each component. Then I merged all the related components for which the guide lines were close and re-performed a PCA again to obtain new, more precise line equations.
 	
 	\paragraph{}
 	But the big problem is that the principal component analysis was not very good on the small connected components and some lines were mainly formed by a succession of small connected components especially in paintings with very small tiles. Then there is a butterfly effect, some components merge when they should not, and others do not merge when they should. The results were therefore not very good and I implemented the Hough transform \cite{hough} which gave much better results.
@@ -325,7 +326,7 @@
 	Thus $\rho$ represents the distance between the line and the origin except for the sign and $\theta$ represents the angle of the line normal. Let's call $D$ the length of the diagonal of the image. In the literature we generally take $\theta$ in $[0; \pi[$ and $\rho$ in $[-D; D]$. For my part, I preferred to take $\theta$ in $[-\pi / 2; \pi]$ and $\rho$ in $[0; D]$. These domains cover the entire rectangle of the image, \textit{i.e.} $[0; W) \times[0; H)$.
 	
 	\paragraph{Algorithm}
-	The idea of the algorithm is to build a new image $H$, of size $R \times T$ where $R$ and $T$ are fixed using the dimensions of the original image. Then for each pixel of position $(x, y)$ of the gradient with a non-zero intensity, and for each $t \in[0; T)$ we calculate the distance at the origin, $\rho$ of the line of direction $\theta = 3 \pi / 2 \times t / T - \pi / 2$ passing by $ (x, y)$. We then let $r = R * \rho / D$ and we add a positive value to the pixel of coordinates $(r, t)$ in the image $H$ (\textsc{Algorithm} \ref{alg:hough}).
+	The idea of the algorithm is to build a new image $H$, of size $R \times T$ where $R$ and $T$ are fixed using the dimensions of the original image. Then for each pixel of position $(x, y)$ of the gradient with a non-zero intensity, and for each $t \in[0; T)$ we compute the distance at the origin, $\rho$ of the line of direction $\theta = 3 \pi / 2 \times t / T - \pi / 2$ passing by $ (x, y)$. We then let $r = R * \rho / D$ and we add a positive value to the pixel of coordinates $(r, t)$ in the image $H$ (\textsc{Algorithm} \ref{alg:hough}).
 	
 	\begin{algorithm}[h]
 		\caption{Hough Transform}
@@ -349,7 +350,7 @@
 	\end{algorithm}
 
 	\paragraph{}
-	When the image Hough transform is computed, lines are local maximums of $H$. To obtain these local maximums, I sort all the pixels of the transform in descending order and then take the pixels one by one and add them to a list $L$ of lines if the line corresponding to the pixel in question is far enough away from all the other lines already contained in the list $L$.
+	When Hough transform is computed, lines are local maximums of $H$. To obtain these local maximums, I sort all the pixels of the transform in descending order and then take the pixels one by one and add them to a list $L$ of lines if and only if the line corresponding to the pixel in question is far enough away from all the other lines already contained in the list $L$.
 	
 	\paragraph{}
 	The value $H[r][t]$ then corresponds approximately to the number of pixels of the gradient on the line parameterized by $r$ and $t$. I say approximately because of the function $f$. This function allows you to take into account the intensity of the gradient and the difference between the angle of the line and the angle of the gradient. I have designed the following function:
@@ -407,7 +408,7 @@
 	This algorithm can be improved in many ways to reduce the computation time but also to improve the final result. Here are the main improvements I have implemented:
 	\begin{itemize}
 		\item We don't have to go through the whole spectrum of $\theta$ but just limit ourselves to a smaller window around $\Theta[x][y]$. This limits the computation time and prevents some pixels from contributing to a line that does not correspond at all to the orientation of the gradient.
-		\item After calculating $\rho$ for a given pixel and direction $\theta$, instead of taking $r$ as a rounding of $\rho \times R/D$ we can take the two integers $r_1 = \lfloor \rho \times R/D \rfloor$ and $r_2 = \lceil \rho \times R/D \rceil$ and add a portion from $f(G, \Theta, \theta, x, y)$ to $H[r_1][t]$ and $H[r_2][t]$.
+		\item After computing $\rho$ for a given pixel and direction $\theta$, instead of taking $r$ as a rounding of $\rho \times R/D$ we can take the two integers $r_1 = \lfloor \rho \times R/D \rfloor$ and $r_2 = \lceil \rho \times R/D \rceil$ and add a portion from $f(G, \Theta, \theta, x, y)$ to $H[r_1][t]$ and $H[r_2][t]$.
 		\item The values $H[r][t]$ can be readjusted according to the distance that the line parameterized by $r$ and $t$ travels in the cut area of the image (see \figurename \ref{im:cut}).
 		\item Once you have found that the pixel $(r, t)$ of the Hough transform corresponds to a local maximum and therefore to a line, you can use the values of the Hough transform in a small neighbourhood of $(r, t)$ to readjust the parameters $\rho$ and $\theta$ of the corresponding line.
 	\end{itemize}
@@ -431,7 +432,7 @@
 	\end{figure}
 
 	\paragraph{}
-	On the \figurename \ref{im:hough} we can see what the transform gives on the painting we have been following since the beginning. Only the 20 best lines are displayed in the interface after clicking on the button to find the lines. But the user has the possibility to delete the lines that do not interest him with the right click and to add the lines that the Hough transform found without them being displayed by right-clicking approximately where the desired line should be. The user also has the possibility to drag the mouse to indicate approximately the direction of the line if the position of the click is not really accurate. As mentioned in the subsection \ref{s:general}, the user can then group the lines together to calculate the vanishing points (they are computed by minimizing the average square distances with the group lines) and also to calculate the diagonals of the tiles. Diagonals are calculated by applying a PCA \cite{pca} to the intersections of the horizontal and depth lines. Finally, it is possible to save the result obtained in SVG format. The \figurename \ref{im:final} shows the result obtained for the painting we are following. It can then be seen that even if the vanishing line is not very horizontal, the perspective seems to be respected since the parallel lines all intersect well at the same point and all these vanishing points are on the same line.
+	On the \figurename \ref{im:hough} we can see what the transform gives on the painting we have been following since the beginning. Only the 20 best lines are displayed in the interface after clicking on the button to find the lines. But the user has the possibility to delete the lines that do not interest him with the right click and to add the lines that the Hough transform found without them being displayed by right-clicking approximately where the desired line should be. The user also has the possibility to drag the mouse to indicate approximately the direction of the line if the position of the click is not really accurate. As mentioned in the subsection \ref{s:general}, the user can then group the lines together to compute the vanishing points (they are computed by minimizing the average square distances with the group lines) and also to compute the diagonals of the tiles. Diagonals are calculated by applying a PCA \cite{pca} to the intersections of the horizontal and depth lines. Finally, it is possible to save the result obtained in SVG format. The \figurename \ref{im:final} shows the result obtained for the painting we are following. It can then be seen that even if the vanishing line is not very horizontal, the perspective seems to be respected since the parallel lines all intersect well at the same point and all these vanishing points are approximately on the same line.
 	
 	\begin{figure}[h]
 		\centering
@@ -441,14 +442,14 @@
 	\end{figure}
 
 	\paragraph{}
-	Results on different paintings are given in the appendices. I also give for some of them the difference obtained between the lines drawn by my algorithm and the lines drawn by Ricardo (one of my tutors).	Finally, we would also like to know how close or far away the painting is to a perfect perspective. Indeed, we would like to know if it is possible that the artist made small inaccuracies or if he did not completely take into account the rules of perspective. Moreover, my algorithm is not necessarily very precise and therefore it can be interesting to see that a perfect perspective can be very close to the painting. This is the purpose of the next section. 
+	Results on different paintings are given in the appendices. I also give for some of them the difference obtained between the lines drawn by my algorithm and the lines drawn by Ricardo.	Finally, we would also like to know how close or far away the painting is to a perfect perspective. Indeed, we would like to know if it is possible that the artist made small inaccuracies or if he did not completely take into account the rules of perspective. Moreover, my algorithm is not necessarily very precise and therefore it can be interesting to see that a perfect perspective can be very close to the painting. This is the purpose of the next section. 
 
 	\section{Attempt to redraw the paintings with a perfect perspective}
 	
 	\paragraph{}
 	Elmar suggested I use the paper \textit{Structure preserving manipulation of photographs} \cite{redraw} that allows us to modify an image by using the its gradient. The idea is then to do the following steps starting from the lines obtained in the previous section:
 	\begin{itemize}
-		\item Calculate new lines for the tiles that would all intersect exactly at a single vanishing point and remain as close as possible to the previously obtained lines.
+		\item Compute new lines for the tiles that would all intersect exactly at a single vanishing point and remain as close as possible to the previously obtained lines.
 		\item Modify the gradient of the image so that the high intensity pixels are on the new lines.
 		\item Use Poisson editing \cite{poisson} to obtain the new image with perfect perspective from the new gradient.
 	\end{itemize}
@@ -465,15 +466,19 @@
 		\label{eq:R}
 		R = \dfrac{(y_C - y_A)^2}{(x_C - x_A)^2 + (y_C - y_A)2} \times \left( v . (d_C - d_A)^2 + c^{te} \right)
 	\end{equation}
+	The left-side of the multiplication is null when the vanishing line is horizontal and strictly positive otherwise. The right-side try to minimize the difference between $d_C$ and $d_A$ because if these two values are equal then tiles are correctly oriented.
+	
+	\paragraph{}
 	So that the vanishing points do not diverge too much, I minimize also this expression:
 	\begin{equation}
 		\label{eq:S}
 		S = v . (x_A - x_{A_0})^2 + v . (y_A - y_{A_0})^2 + v . (x_B - x_{B_0})^2 + v . (y_B - y_{B_0})^2 + v . (x_C - x_{C_0})^2 + v . (y_C - y_{C_0})^2
 	\end{equation}
-	Where $B$ and $d_B$ are still given by the equations \eqref{eq:B} and \eqref{eq:dB}. The points $A_0$, $B_0$ and $C_0$ are the vanishing points obtained in the previous section, the ones that are represented by red dots in the \figurename \ref{im:final}.
+	Where $B$ and $d_B$ are still given by the equations \eqref{eq:B} and \eqref{eq:dB}. The points $A_0$, $B_0$ and $C_0$ are the vanishing points obtained in the previous section, the ones that are represented by red dots in the \figurename \ref{im:final}. This expression $S$ is simply the sum of the square distances of the new vanishing points to the old ones.
 	
 	\paragraph{}
 	The last expression to minimize is the most complicated one. With the two previous expressions $R$ and $S$ we only take care of the vanishing line and the vanishing points but we don't take care of the position of the lines in the paintings. In order not to have something too complicated to optimize, I decided to make sure that for each group of parallel lines, the endpoints of the right-most line and the left-most line match as closely as possible with the endpoints of initial lines.
+	
 	\begin{figure}[h]
 		\centering
 		\begin{tikzpicture}[scale=0.9]
@@ -527,16 +532,17 @@
 		\caption{Constructions of a few points for the function to be minimized}
 		\label{im:cons}
 	\end{figure}
-	We call $P_{A_0}$ the endpoint of the left-most line whose vanishing point is $A_0$ and $P'_{A_0}$ the endpoint of the right-most line whose vanishing point is $A_0$. We define $P_{B_0}$, $P'_{B_0}$, $P_{C_0}$ and $P'_{C_0}$ in the same way. Here I will only explain what I minimize for the lines whose vanishing points is $A$, but you can replace $A$ with $B$ or $C$ for the rest of the paragraph. We can also define the unit vanishing line direction vector $\vec{u}$ by the normalization of $\overrightarrow{AC}$. Then we can obtain the normal unit vector $\vec{n}$ by a simple rotation of minus 90 degrees. Now our goal is to compute the distance between $P'_{A_0}$ and the new right-most line assuming that the left-most line passes through $P_{A_0}$. To do this, we use the fact that the intersections of lines whose vanishing point is $A$ with the line $(D)$ (the one parallel to the vanishing line and located at a distance $d_{trans}$ from it) are spaced from the distance $d_A$. Thus we define $P_A$ as the intersection between $(D)$ and $(A P_{A_0})$:
+
+	We call $P_{A_0}$ the endpoint of the left-most line whose vanishing point is $A_0$ and $P'_{A_0}$ the endpoint of the right-most line whose vanishing point is also $A_0$. We define $P_{B_0}$, $P'_{B_0}$, $P_{C_0}$ and $P'_{C_0}$ in the same way. Here I will only explain what I minimize for the lines whose vanishing points is $A$, but you can replace $A$ with $B$ or $C$ for the rest of the paragraph. We can also define the unit vanishing line direction vector $\vec{u} \,$ by the normalization of $\overrightarrow{AC}$. Then we can obtain the normal unit vector $\vec{n} \,$ by a simple rotation of minus 90 degrees. Now our goal is to compute the distance between $P'_{A_0}$ and the new right-most line assuming that the left-most line passes through $P_{A_0}$. To do this, we use the fact that the intersections of lines whose vanishing point is $A$ with the line $(D)$ (the one parallel to the vanishing line and located at a distance $d_{trans}$ from it) are spaced from the distance $d_A$. Thus we define $P_A$ as the intersection between $(D)$ and $(A P_{A_0})$:
 	$$ P_A = A + d_{trans} \, / \, \left( \vec{n} . \overrightarrow{A P_{A_0}} \right) \times \overrightarrow{A P_{A_0}} $$
 	Therefore the right-most line passes through the point $P'_A$ defined by:
 	$$ P'_A = P_A + (n_A - 1) \times d_A \times \vec{u} $$
-	We finally get the wanted distance:
-	$$ dist((A P'_A), \, P'_{A_0}) = \left| \det \begin{bmatrix} \overrightarrow{P'_A P'_{A_0}} & \overrightarrow{A P'_A} \end{bmatrix} \right| \; / \; \left\| \overrightarrow{A P'_A} \right\| $$
+	Where $n_A$ is the number of lines whose vanishing points is $A$. We finally get the wanted distance:
+	$$ dist \left( (A P'_A), \, P'_{A_0} \right) = \left| \det \begin{bmatrix} \overrightarrow{P'_A P'_{A_0}} & \overrightarrow{A P'_A} \end{bmatrix} \right| \; / \; \left\| \overrightarrow{A P'_A} \right\| $$
 	The last term that we need to minimize is then:
 	\begin{equation}
 		\label{eq:T}
-		T = dist((A P'_A), \, P'_{A_0})^2 + dist((B P'_B), \, P'_{B_0})^2 + dist((C P'_C), \, P'_{C_0})^2
+		T = dist \left( (A P'_A), \, P'_{A_0} \right)^2 + dist \left( (B P'_B), \, P'_{B_0} \right)^2 + dist \left( (C P'_C), \, P'_{C_0} \right)^2
 	\end{equation}
 	
 	\paragraph{}
