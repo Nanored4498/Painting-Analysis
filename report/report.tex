@@ -442,9 +442,11 @@
 	\end{figure}
 
 	\paragraph{}
-	Results on different paintings are given in the appendices. I also give for some of them the difference obtained between the lines drawn by my algorithm and the lines drawn by Ricardo.	Finally, we would also like to know how close or far away the painting is to a perfect perspective. Indeed, we would like to know if it is possible that the artist made small inaccuracies or if he did not completely take into account the rules of perspective. Moreover, my algorithm is not necessarily very precise and therefore it can be interesting to see that a perfect perspective can be very close to the painting. This is the purpose of the next section. 
+	Result on the painting that looks like this one is given in the appendices. I also give for some of them the difference obtained between the lines drawn by my algorithm and the lines drawn by Ricardo.	Finally, we would also like to know how close or far away the painting is to a perfect perspective. Indeed, we would like to know if it is possible that the artist made small inaccuracies or if he did not completely take into account the rules of perspective. Moreover, my algorithm is not necessarily very precise and therefore it can be interesting to see that a perfect perspective can be very close to the painting. This is the purpose of the next section. 
 
 	\section{Attempt to redraw the paintings with a perfect perspective}
+	
+	\label{s:redraw}
 	
 	\paragraph{}
 	Elmar suggested I use the paper \textit{Structure preserving manipulation of photographs} \cite{redraw} that allows us to modify an image by using the its gradient. The idea is then to do the following steps starting from the lines obtained in the previous section:
@@ -575,23 +577,39 @@
 	
 	\begin{figure}[h]
 		\centering
-		\includegraphics[scale=0.28]{perf.jpg}
+		\includegraphics[width=\linewidth]{perf.jpg}
 		\vspace{-2mm}
 		\caption{Result of the perfect perspective}
 		\label{im:perf}
 	\end{figure}
 
+	\paragraph{}
+	It can be seen that these new lines match the tiles of the paint well. Unfortunately, when trying on other paints, the result obtained is not always great. It is then necessary to modify some constants in the function to be minimized to ensure that a perfect perspective really does not fit with the paint because by changing the constants it is sometimes possible to obtain a perfect perspective that fits well. To fix this we could add sub-functions to minimize like $T$ but on extreme points of different lines rather than the right-most one. On the other hand, doing this increases the computing time.
+
 	\section{Conclusion}
 	
-	
+	\paragraph{}
+	At the end of this internship I have obtained a graphic interface that is quite easy to use and allows us to do the desired work without human bias. Indeed, for some paints, I obtained different results from what Ricardo had obtained by hand. Of course, there is still much room for improvement. When the lines are not quite straight in the painting, the algorithm will usually find a line that matches a portion of the painting's line but not the entire painting's line. I tried to use a PCA on the pixels close to the found lines but the result was not great. Moreover, the thresholding after the Sobel filter is certainly not the best that can be done, one could imagine using a threshold that depends on local and not global intensity. Indeed currently the contours in a shaded area are less strong than the illuminated contours which is not desirable. Finally, the last part, which was supposed to consist of redrawing the paint, was not completed. This is clearly an avenue to explore.
 	
 	\appendix
 	
-	\section{Source Code}
-	
-	Here is my git repository: \url{https://github.com/Nanored4498/Painting-Analysis}.
-
 	\bibliographystyle{alpha}
 	\bibliography{bib.bib}
 	
+	\section{Source Code}
+	
+	Here is my git repository: \url{https://github.com/Nanored4498/Painting-Analysis}. The source code of the interface is in the folder \verb|src| and there is Python script in the folder \verb|redraw| for the section \ref{s:redraw} about the perfect perspective.
+	
+	\newpage
+	\section{Result on the other painting of the pair}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=\linewidth]{final_bis.jpg}
+		\caption{Results on the painting that looks similar to the one in the \figurename \ref{im:final}}
+	\end{figure}
+
+	\paragraph{}
+	IIn this painting the perspective also seems to be well respected. The observation that in each pair, one painting respects perspective and the other not, is then not verified for the pair that illustrated this report.
+
 \end{document}
