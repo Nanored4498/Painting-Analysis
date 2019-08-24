@@ -1,6 +1,6 @@
 # Painting Analysis
 
-This is an interface to find vanishing points and lines in the image of a painting. The interface use [Qt](https://www.qt.io/). Then you can simply compile and run the code with the following commands:
+This is an interface to find vanishing points and lines in the image of a painting. The interface uses [Qt](https://www.qt.io/). Then you can simply compile and run the code with the following commands:
 ```bash
 mkdir build
 cd build

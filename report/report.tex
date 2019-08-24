@@ -607,9 +607,30 @@
 		\centering
 		\includegraphics[width=\linewidth]{final_bis.jpg}
 		\caption{Results on the painting that looks similar to the one in the \figurename \ref{im:final}}
+		\label{im:bis}
+	\end{figure}
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=\linewidth]{perf_bis.jpg}
+		\begin{tikzpicture}[scale=1.2]
+			\node at (0, 0) {\includegraphics[width=0.792\linewidth]{perf_bis_zoom.jpg}};
+			
+			\draw[red] (-5.3, 2.3) -- (5.3, 2.46);
+			\node[red] (a) at (6.4, 2.33) {Bad};
+			\draw[->] (a) -- (5.35, 2.46);
+			\draw[->] (a) -- (5.35, 2.2);
+			
+			\draw[red] (-1.82, 2.77) -- (5.31, -2.6);
+			\node[red] (a) at (6.3, -2.7) {Bad};
+			\draw[->] (a) -- (5.35, -2.6);
+			\draw[->] (a) -- (5.35, -2.38);
+		\end{tikzpicture}
+		\caption{Perfect perspective obtained on the other painting of the pair}
+		\label{im:perf_bis}
 	\end{figure}
 
 	\paragraph{}
-	In this painting the perspective also seems to be well respected. The observation that in each pair, one painting respects perspective and the other not, is then not verified for the pair that illustrated this report.
+	In this painting (\figurename \ref{im:bis}) the perspective also seems to be well respected. The observation that in each pair, one painting respects perspective and the other not, is then not realy verified for the pair that illustrated this report. However, by observing the perfect perspective closest to this painting (\figurename \ref{im:perf_bis}), we can see that it does not quite match the painting. We can say that the perspective remains verified but that it is not as good as in the first painting of this pair.
 
 \end{document}
