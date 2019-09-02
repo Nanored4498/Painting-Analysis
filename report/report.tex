@@ -222,7 +222,7 @@
 	Where $G_{C, x}$ and $G_{C, y}$ are are respectively the discrete horizontal and vertical gradients of the component $C$. We can then compute the norm of the gradient in this component:
 	$$ G_C = \sqrt{G_{C, x}^2 + G_{C, y}^2} $$
 	As only the direction of the gradient and not the orientation of the gradient interests us, we want to compute the angle of the gradient modulo $\pi$ instead of $2 \pi$. We then defines $(G_{C, x}', \, G_{C, y}')$ equal to $(G_{C, x}, \, G_{C, y})$ if $G_{C, x} \geqslant 0$ or to $(-G_{C, x}, \, -G_{C, y})$ otherwise. Finally, the norm $G$ and the angle $\Theta$ of the gradient are obtained as follows:
-	$$ G = \sqrt{G_{L^*} + G_{a^*} + G_{b^*}} \qquad \Theta = \arg \left( G_{L^*} G_{L^*, x}' + G_{a^*} G_{a^*, x}' + G_{b^*} G_{b^*, x}' + i \left( G_{L^*} G_{L^*, y}' + G_{a^*} G_{a^*, y}' + G_{b^*} G_{b^*, y}' \right) \right)$$
+	$$ G = \sqrt{G_{L^*}^2 + G_{a^*}^2 + G_{b^*}^2} \qquad \Theta = \arg \left( G_{L^*} G_{L^*, x}' + G_{a^*} G_{a^*, x}' + G_{b^*} G_{b^*, x}' + i \left( G_{L^*} G_{L^*, y}' + G_{a^*} G_{a^*, y}' + G_{b^*} G_{b^*, y}' \right) \right) $$
 	
 	\begin{figure}[h]
 		\centering
@@ -240,7 +240,7 @@
 	In the \figurename \ref{im:sob} we can see the result obtained on the same painting used in the previous part about smoothing (I will use this painting throughout the explanation of the algorithm). The image on the left is the smoothed paint from the previous part and the one on the right is the image representing the gradient. For each pixel, the intensity of the color represents the norm of the gradient. In the image I give, the intensity is proportional to the square root of the norm. This choice was made so that it could be seen that despite the smoothing done previously, the gradient norm is not zero inside the tiles. The color gives the angle of the gradient. Red for $0+\Z \pi$, green for $\pi / 3 + \Z \pi$ and blue for $2\pi / 3 + \Z \pi$.
 	
 	\paragraph{Automatic cleaning}
-	To eliminate the remaining noise and make the rest easier, I clean the image a little bit. To do so, I apply a threshold that will zero all pixels in the gradient whose intensity is less than a certain value. Then I compute the connected components of the remaining pixels and zero all pixels of the connected components that have a size smaller than a minimum size. I have a function that calculates the intensity threshold and minimum size of the related components based on the characteristics of the image. Unfortunately, these two values are not always perfect. I therefore allow the user to modify these values if necessary using sliders. The effect of this cleaning is illustrated in \figurename \ref{im:clean}.
+	To eliminate the remaining noise and make the rest easier, I clean the image a little bit. To do so, I apply a threshold that will zero all pixels in the gradient whose intensity is less than a certain value. Then I compute the connected components of the remaining pixels and zero all pixels of the connected components that have a size smaller than a minimum size. I have a function that computes the intensity threshold and minimum size of the related components based on the characteristics of the image. Unfortunately, these two values are not always perfect. I therefore allow the user to modify these values if necessary using sliders. The effect of this cleaning is illustrated in \figurename \ref{im:clean}.
 	
 	\begin{figure}[h]
 		\centering
