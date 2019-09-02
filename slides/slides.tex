@@ -7,8 +7,10 @@
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
 \usepackage{tikz}
+\usepackage{fontawesome}
+\usepackage{amsmath}
 
-\graphicspath{{images/}}
+\graphicspath{{../report/ims/}{ims/}}
 
 \title{Vérification de la perspective dans les peintures}
 \subtitle{Stage de M1}
@@ -86,8 +88,63 @@
 
 	\section{Détection des lignes}
 	
-	\begin{frame}
-		contenu...
+	\begin{frame}{Les étapes}
+		\begin{itemize}
+			\small \item Changement d'espace de couleurs (RGB $\rightarrow$ CIE Lab)
+			\small \item Lissage / élimination du bruit
+			\small \item Calcul du gradient
+			\small \item Transformée de Hough
+			\small \item Regroupement des lignes et calcul des points de fuites
+		\end{itemize}
+		\centering
+		\includegraphics[scale=0.33]{hooch1.jpg}
+		\includegraphics[scale=0.4]{hooch2.jpg}
+	\end{frame}
+
+	\begin{frame}{CIE Lab}
+		Besoin d'un espace dans lequel la distance entre deux couleur est en accord avec l'œil humain :
+		$$ \Delta E = \sqrt{(R_1 - R_2)^2 + (V_1 - V_2)^2 + (B_1 - B_2)^2} \qquad \huge \color{red} \text{\faThumbsODown} $$
+		$$ \Delta E = \sqrt{(L_1^* - L_2^*)^2 + (a_1^* - a_2^*)^2 + (b_1^* - b_2^*)^2} \qquad \huge \color{green} \text{\faThumbsOUp}  $$
+	\end{frame}
+	
+	\begin{frame}{Filtre gaussien}
+		\centering
+		\begin{tikzpicture}[scale=0.8]
+		\node at (0, 0.9) {\includegraphics[width=8cm]{smoothing.jpg}};
+		\node[below] at (0, 0) {\small Filtre gaussien};
+		\node[below] at (-3.45, 0) {\small Image original};
+		\fill[white] (1.7, 0) rectangle (5.1, 2);
+		\fill[white] (-5.1, 0) rectangle (-8.6, 2);
+		\end{tikzpicture}
+		$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z') \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma^2} \right) $$
+		\small Où $\Omega_{z}$ est une fenêtre autour de $z \in \N^2$ et $W = \sum_{z' \in \Omega_{z}} \exp \left( - \frac{\| z - z'\|^2}{2 \sigma^2} \right)$.
+	\end{frame}
+
+	\begin{frame}{Filtre bilatéral}
+		\centering
+		\begin{tikzpicture}[scale=0.8]
+		\node at (0, 0.9) {\includegraphics[width=8cm]{smoothing.jpg}};
+		\node[below] at (0, 0) {\small Filtre gaussien};
+		\node[below] at (-3.45, 0) {\small Image original};
+		\node[below] at (3.45, 0) {\small Filtre Bilatéral};
+		\end{tikzpicture}
+		$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z) \, f(z, z') \, g \left( I(z), I(z') \right) $$
+		\small Où $\Omega_{z}$ est une fenêtre autour de $z$ et $W = \sum_{z' \in \Omega_{z}} f(z, z') g(I(z), I(z'))$.
+		$$ f(z, z') = \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma_f^2} \right) \qquad g(u, u') = \exp \left( - \dfrac{\| u - u'\|^2}{2 \sigma_g^2} \right) $$
+	\end{frame}
+
+	\begin{frame}{Sélection de zone intéressante}
+		\begin{figure}[h]
+			\centering
+			\begin{tikzpicture}[scale=0.75]
+			\node (a) at (0, 0) {\includegraphics[scale=0.75]{zone_select.png}};
+			\node (b) at (8.5, 0) {\includegraphics[scale=0.9]{bilateral.png}};
+			\draw[->, ultra thick] (a) -- node[above, align=center]
+			{\footnotesize Coupe et \\[-1mm]
+				\footnotesize application du \\[-1mm]
+				\footnotesize filtre bilatéral} (b);
+			\end{tikzpicture}
+		\end{figure}
 	\end{frame}
 
 \end{document}
