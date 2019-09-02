@@ -379,4 +379,93 @@
 		{\tiny [PGB03] Patrick Pérez, Michel Gangnet, and Andrew Blake. Poisson image editing. \textit{ACM Trans. Graph.}, 22(3):313–318, 2003. }
 	\end{frame}
 
+	\begin{frame}{Variables à optimiser}
+		Perspective paramétrée par les variables :
+		$$ {\color{red} x_A, \, y_A, \, d_A}, {\color{blue} x_B, \, y_B, \, d_B}, {\color{green} x_C, \, y_C, \, d_C} $$
+		Équations permettant d'éliminer $\color{blue} x_B, \, y_B, \, d_B$ :$$ {\color{blue} B} = \dfrac{{\color{green} d_C} {\color{red} A} + {\color{red} d_A} {\color{green} C}}{{\color{red} d_A} + {\color{green} d_C}} \qquad {\color{blue} d_B} = 2 \dfrac{{\color{red} d_A} {\color{green} d_C}}{{\color{red} d_A} + {\color{green} d_C}} $$
+		Variables restantes :
+		$$ {\color{red} x_A, \, y_A, \, d_A}, {\color{green} x_C, \, y_C, \, d_C} $$
+	\end{frame}
+
+	\begin{frame}{Fonctions à minimiser}
+		Afin d'avoir une ligne de fuite horizontale et des carreaux bien orientés on minimise :
+		$$ R = \dfrac{({\color{green} y_C} - {\color{red} y_A})^2}{({\color{green} x_C} - {\color{red} x_A})^2 + ({\color{green} y_C} - {\color{red} y_A})2} \times \left( v . ({\color{green} d_C} - {\color{red} d_A})^2 + c^{te} \right) $$
+	\end{frame}
+
+	\begin{frame}{Fonctions à minimiser}
+		Afin que les points de fuite restent à leur place :
+		$$ \begin{matrix}
+		S & = & v . ({\color{red} x_A} - x_{A_0})^2 + v . ({\color{red} y_A} - y_{A_0})^2 \\
+		& + & v . ({\color{blue} x_B} - x_{B_0})^2 + v . ({\color{blue} y_B} - y_{B_0})^2 \\
+		& + & v . ({\color{green} x_C} - x_{C_0})^2 + v . ({\color{green} y_C} - y_{C_0})^2
+		\end{matrix} $$
+	\end{frame}
+
+	\begin{frame}{Fonctions à minimiser}
+		\begin{figure}[h]
+			\makebox[\textwidth][c]{\begin{tikzpicture}[scale=0.64]
+			\node at (1.5, 4.9) {\small Lines from the previous part};
+			\draw (-2, 4.5) -- (-2, 0) -- (5, 0) -- (5, 4.5);
+			\draw[blue, thick] (-3, 3.5) -- (6, 4.5) ;
+			\node[red] at (0, 3.83) {$\bullet$};
+			\node[red, above] at (0, 3.83) {$A_0$};
+			\node at (0.657, 0) {$\bullet$};
+			\node[below] at (0.657, 0) {$P_{A_0}$};
+			\node at (5, 0.651) {$\bullet$};
+			\node[right] at (5, 0.651) {$P'_{A_0}$};
+			\node[red, below] at (3, 0) {\footnotesize $n_A = 8 \text{ lines}$};
+			
+			\begin{scope}
+			\clip (-2, 4.5) rectangle (5, 0);
+			\foreach \i in {0, ..., 7} \draw[red] (0, 3.83) -- ({0.994*\i + 1}, {0.11*\i - 2});
+			\end{scope}
+			
+			\node[blue] at (6.35, 4.1) {\tiny Vanishing Line};
+			\node[] at (6.35, 2.25) {\tiny Image Border};
+			
+			\node at (10.95, 4.9) {\small New lines};
+			\draw (7.7, 4.5) -- (7.7, 0) -- (14.7, 0) -- (14.7, 4.5);
+			\draw[blue, thick] (6.7, 3.85) -- (15.6, 4.45);
+			\draw[blue, thick] (6.7, 0.4) --
+			node[pos=0.05, above] {\footnotesize $(D)$}
+			node[pos=0.55, sloped, above] {\tiny
+				$\color{black} ({\color{red} n_A} - 1) \times {\color{purple} d_A}$}
+			(15.7, 1);
+			\draw (8.7, 3.983) -- node[left, below, sloped] {\scriptsize $d_{trans}$} (8.929, 0.549);
+			\node[purple] at (8.95, 4) {$\bullet$};
+			\node[purple, above] at (8.95, 4) {$A$};
+			\node at (10.357, 0) {$\bullet$};
+			\node[below] at (10.357, 0) {$P_{A_0}$};
+			\node at (14.7, 0.651) {$\bullet$};
+			\node[right] at (14.7, 0.651) {$P'_{A_0}$};
+			
+			\node[purple] at (10.136, 0.629) {$\bullet$};
+			\node[purple, above left] at (10.136, 0.629) {$P_A$};
+			\node[purple] at (13.808, 0.874) {$\bullet$};
+			\node[purple, above] at (13.808, 0.874) {$P'_A$};
+			
+			\draw[ultra thick, brown, ->] (13.45, 4.3) -- node[above] {\footnotesize $\vec{u}$} (14.2, 4.35);
+			\draw[ultra thick, brown, ->] (13.45, 4.3) -- node[left] {\footnotesize $\vec{n}$} (13.5, 3.55);
+			
+			\draw[purple] (8.95, 4) -- (10.357, 0);
+			\draw[purple] (8.95, 4) -- (14.7, 0.3);
+			\end{tikzpicture}}
+			\vspace{-10mm}
+		\end{figure}
+	
+		$$ T = dist \left( ({\color{red}A} {\color{red}P'_A}), \, P'_{A_0} \right)^2 + dist \left( ({\color{blue}B} {\color{blue}P'_B}), \, P'_{B_0} \right)^2 + dist \left( ({\color{green}C} {\color{green}P'_C}), \, P'_{C_0} \right)^2 $$
+	\end{frame}
+
+	\begin{frame}{Minimisation}
+		On utilise la méthode Newton pour minimiser :
+		$$ F(x_A, y_A, x_C, y_C, d_A, d_C) = c^{te} . R \, + \, v . S \, + \, v . T $$
+	\end{frame}
+
+	\begin{frame}{Résultat}
+		\begin{figure}[h]
+			\centering
+			\includegraphics[width=\linewidth]{perf.jpg}
+		\end{figure}
+	\end{frame}
+
 \end{document}
