@@ -175,7 +175,7 @@
 	
 	\paragraph{}
 	One solution to overcome these important edge disappearances is to use a bilateral filter \cite{bil}. This filter is defined using two functions $f: \N^2 \times \N^2 \rightarrow \R$ and $g: \R \times \R \rightarrow \R$ and gives the following image:
-	$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z) \, f(z, z') \, g \left( I(z), I(z') \right) $$
+	$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z') \, f(z, z') \, g \left( I(z), I(z') \right) $$
 	Where $\Omega_{z}$ is still a window around $z$ and $W = \sum_{z' \in \Omega_{z}} f(z, z') g(I(z), I(z'))$. Thanks to the $g$ function, not only the position of the other pixels is taken into account, but also the value of these pixels. The idea we can then have is to use this function $g$ to ignore pixels that have a too different color in order not to smooth the borders between two different colors. Taking two Gaussian functions for f and g is then common practice and that is the choice I made:
 	$$ f(z, z') = \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma_f^2} \right) \qquad g(u, u') = \exp \left( - \dfrac{\| u - u'\|^2}{2 \sigma_g^2} \right) $$
 	The two standard deviations ($\sigma_f$ and $\sigma_g$) and the size of the neighborhood are automatically calculated according to certain image characteristics.

@@ -131,7 +131,7 @@
 		\node[below] at (-3.45, 0) {\small Image original};
 		\node[below] at (3.45, 0) {\small Filtre Bilatéral};
 		\end{tikzpicture}
-		$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z) \, f(z, z') \, g \left( I(z), I(z') \right) $$
+		$$ I'(z) = \dfrac{1}{W} \sum_{z' \in \Omega_{z}} I(z') \, f(z, z') \, g \left( I(z), I(z') \right) $$
 		\small Où $\Omega_{z}$ est une fenêtre autour de $z$ et $W = \sum_{z' \in \Omega_{z}} f(z, z') g(I(z), I(z'))$.
 		$$ f(z, z') = \exp \left( - \dfrac{\| z - z'\|^2}{2 \sigma_f^2} \right) \qquad g(u, u') = \exp \left( - \dfrac{\| u - u'\|^2}{2 \sigma_g^2} \right) $$
 	\end{frame}
@@ -465,6 +465,27 @@
 		\begin{figure}[h]
 			\centering
 			\includegraphics[width=\linewidth]{perf.jpg}
+		\end{figure}
+	\end{frame}
+
+	\begin{frame}{Autre peinture}
+		\begin{figure}[h]
+			\centering
+			\includegraphics[width=\linewidth]{final_bis.jpg}
+		\end{figure}
+	\end{frame}
+
+	\begin{frame}{Autre peinture}
+		\begin{figure}[h]
+			\centering
+			\includegraphics[width=\linewidth]{perf_bis.jpg}
+		\end{figure}
+	\end{frame}
+
+	\begin{frame}{Autre peinture}
+		\begin{figure}[h]
+			\centering
+			\includegraphics[width=\linewidth]{perf_bis_zoom.jpg}
 		\end{figure}
 	\end{frame}
 
