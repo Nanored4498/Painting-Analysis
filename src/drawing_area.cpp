@@ -119,17 +119,32 @@ void DrawingArea::eraseSobel(double px, double py) {
 }
 
 void DrawingArea::computeHorizon() {
-	if(vanishPoints.size() < 2) {
-		if(horizontalLine) delete horizontalLine;
-		horizontalLine = nullptr;
-		return;
-	}
 	std::vector<PDD> ps;
 	for(const DPoint &p : vanishPoints)
 		ps.emplace_back(p.get_point0().x(), p.get_point0().y());
-	DLine line = pca_pdd(ps, image0.width(), image0.height());
-	if(!horizontalLine) horizontalLine = new DLine(line);
-	else *horizontalLine = line;
+	if(got_horizon_coeff) {
+		if(ps.size() < 1) {
+			if(horizontalLine) delete horizontalLine;
+			horizontalLine = nullptr;
+			return;
+		}
+		double mx = 0, my = 0;
+		for(auto [x, y] : ps) { mx += x; my += y; }
+		mx /= ps.size();
+		my /= ps.size();
+		DLine line = DLine(PA::Line(horizon_coeff, my - horizon_coeff*mx), image0.width(), image0.height());
+		if(!horizontalLine) horizontalLine = new DLine(line);
+		else *horizontalLine = line;
+	} else {
+		if(ps.size() < 2) {
+			if(horizontalLine) delete horizontalLine;
+			horizontalLine = nullptr;
+			return;
+		}
+		DLine line = pca_pdd(ps, image0.width(), image0.height());
+		if(!horizontalLine) horizontalLine = new DLine(line);
+		else *horizontalLine = line;
+	}
 }
 
 void DrawingArea::save_svg(const std::string &filename) const {

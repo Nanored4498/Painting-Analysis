@@ -95,6 +95,8 @@ private:
 	std::vector<DLine*> lines;
 	std::vector<DPoint> vanishPoints;
 	DLine* horizontalLine = nullptr;
+	int got_horizon_coeff = 0;
+	double horizon_coeff = 0.;
 };
 
 #endif // DRAWINGAREA_H

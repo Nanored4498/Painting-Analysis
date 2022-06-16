@@ -122,19 +122,36 @@ void DrawingArea::selectionAction() {
 			s_cr += c*r;
 			s_sr += s*r;
 		}
+		int g = 1;
+		while(groups.count(g) > 0) g++;
 		double det = s_cc * s_ss - s_cs * s_cs;
-		if(qAbs(det) < 1e-6) return;
+		if(det == 0) return;
 		double x = s_ss * s_cr - s_cs * s_sr;
 		double y = - s_cs * s_cr + s_cc * s_sr;
 		x /= det;
 		y /= det;
-		vanishPoints.emplace_back(x, y);
-		int g = 1;
-		while(groups.count(g) > 0) g++;
+		if(qAbs(det) < 2.e-3) {
+			if(x*x+y*y > 1.e7) {
+				double s_c2 = 0., s_s2 = 0.;
+				for(const DLine *l : lines) if(l->is_selected()) {
+					l->getCSR(c, s, r);
+					s_c2 += s*s-c*c;
+					s_s2 -= 2*c*s;
+				}
+				const double no = std::sqrt(s_c2*s_c2 + s_s2*s_s2);
+				const double x2 = 1. - horizon_coeff*horizon_coeff;
+				const double y2 = 2. * horizon_coeff;
+				const double no2 = 2 - x2;
+				horizon_coeff = std::tan(std::atan2(no2 * s_s2 + got_horizon_coeff * no * y2, no2 * s_c2 + got_horizon_coeff * no * x2) / 2.);
+				++ got_horizon_coeff;
+			} else if(qAbs(det) < 1.e-5) return;
+		} else {
+			vanishPoints.emplace_back(x, y);
+			vanishPoints[vanishPoints.size()-1].setGroup(g);
+			vanishPoints[vanishPoints.size()-1].select();
+		}
 		for(DLine *l : lines)
 			if(l->is_selected()) l->setGroup(g);
-		vanishPoints[vanishPoints.size()-1].setGroup(g);
-		vanishPoints[vanishPoints.size()-1].select();
 		emit selected(UNGROUP);
 
 	} else if(action == INTERSECTIONS) {
@@ -211,16 +228,33 @@ void DrawingArea::selectionAction() {
 		}
 
 	} else if(action == UNGROUP) {
-
-		for(DLine *l : lines)
-			if(l->is_selected()) l->setGroup(0);
-		int V = vanishPoints.size();
+		const int V = vanishPoints.size();
+		bool found = false;
 		for(int i = 0; i < V; i++) {
 			if(vanishPoints[i].is_selected()) {
 				if(i != V-1) vanishPoints[i] = vanishPoints[V-1];
 				vanishPoints.pop_back();
+				found = true;
 				break;
 			}
+		}
+		if(found) {
+			for(DLine *l : lines) if(l->is_selected()) l->setGroup(0);
+		} else {
+			double s_c2 = 0., s_s2 = 0.;
+			for(DLine *l : lines) if(l->is_selected()) {
+				double s, c, r;
+				l->setGroup(0);
+				l->getCSR(c, s, r);
+				s_c2 += s*s-c*c;
+				s_s2 -= 2*c*s;
+			}
+			const double no = std::sqrt(s_c2*s_c2 + s_s2*s_s2);
+			const double x2 = 1. - horizon_coeff*horizon_coeff;
+			const double y2 = 2. * horizon_coeff;
+			const double no2 = 2 - x2;
+			horizon_coeff = std::tan(std::atan2(got_horizon_coeff * no * y2 - no2 * s_s2, got_horizon_coeff * no * x2 - no2 * s_c2) / 2.);
+			-- got_horizon_coeff;
 		}
 		emit selected(VANISH_POINT);
 	}
